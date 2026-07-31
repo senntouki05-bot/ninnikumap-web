@@ -149,8 +149,8 @@
   var A = './assets/';
   var PIN_D = 'M146 48C144.2 51.7 143 57 142 62C141 67 140.7 72.7 140 78C139.3 83.3 138.7 88.3 138 94C137.3 99.7 137.2 109 136 112C134.8 115 134 110.5 131 112C128 113.5 122.7 117.8 118 121C113.3 124.2 108 127.5 103 131C98 134.5 92.8 138.3 88 142C83.2 145.7 78.3 149.2 74 153C69.7 156.8 65.5 161 62 165C58.5 169 55.7 173 53 177C50.3 181 47.7 185 46 189C44.3 193 43.7 197 43 201C42.3 205 42 209 42 213C42 217 42.2 221 43 225C43.8 229 45.3 233.2 47 237C48.7 240.8 50.5 244.3 53 248C55.5 251.7 58.7 255.5 62 259C65.3 262.5 69.2 265.8 73 269C76.8 272.2 80.8 275.2 85 278C89.2 280.8 93.7 283.7 98 286C102.3 288.3 108.7 290.2 111 292C113.3 293.8 109.2 297 112 297C114.8 297 122.5 291.3 128 292C133.5 292.7 139.2 300.3 145 301C150.8 301.7 157 296 163 296C169 296 175.2 301.7 181 301C186.8 300.3 192.5 292.7 198 292C203.5 291.3 211.2 297 214 297C216.8 297 212.7 293.8 215 292C217.3 290.2 223.7 288.3 228 286C232.3 283.7 236.8 280.8 241 278C245.2 275.2 249.2 272.2 253 269C256.8 265.8 260.7 262.5 264 259C267.3 255.5 270.5 251.7 273 248C275.5 244.3 277.3 240.8 279 237C280.7 233.2 282.2 229 283 225C283.8 221 284 217 284 213C284 209 283.7 205 283 201C282.3 197 281.7 193 280 189C278.3 185 275.7 181 273 177C270.3 173 267.5 169 264 165C260.5 161 256.3 156.8 252 153C247.7 149.2 242.8 145.7 238 142C233.2 138.3 228 134.5 223 131C218 127.5 212.7 124.2 208 121C203.3 117.8 198 113.5 195 112C192 110.5 191.2 115 190 112C188.8 109 188.7 99.7 188 94C187.3 88.3 186.7 83.3 186 78C185.3 72.7 184.5 67 184 62C183.5 57 184.3 51.7 183 48C181.7 44.3 179.2 41.8 176 40C172.8 38.2 167.8 37 164 37C160.2 37 156 38.2 153 40C150 41.8 147.8 44.3 146 48Z';
 
-  function img(src, css, alt) {
-    return h('img', { attrs: { src: src, alt: alt || '', loading: 'lazy', decoding: 'async' }, css: css });
+  function img(src, css, alt, eager) {
+    return h('img', { attrs: { src: src, alt: alt || '', loading: eager ? 'eager' : 'lazy', decoding: 'async', fetchpriority: eager ? 'high' : null }, css: css });
   }
 
   /* 地域ピンの中に入る小さめのにんにく（テンプレート内SVGをそのまま） */
@@ -246,7 +246,7 @@
 
       /* ---- 見出し ---- */
       var header = h('div', { css: 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;' },
-        img(A + 'garlic.svg', 'width:62px;height:64px;flex:none;display:block;animation:gkBob 4s ease-in-out infinite;'),
+        img(A + 'garlic.svg', 'width:62px;height:64px;flex:none;display:block;animation:gkBob 4s ease-in-out infinite;', '', true),
         h('div', { css: 'flex:0 1 300px;' },
           h('div', { css: "font-family:'Zen Maru Gothic',serif;font-weight:900;font-size:clamp(26px,4vw,38px);line-height:1.1;color:#4a3a2a;text-shadow:0 2px 0 #fff8ea,0 4px 0 rgba(150,120,80,.25);" }, 'にんにくマップ'),
           h('div', { css: 'font-size:13px;color:#8a7358;margin-top:4px;' },
@@ -309,7 +309,7 @@
           v.geoPathsSmooth.map(function (d, i) { return h('path', { key: 'e0' + i, attrs: { d: d } }); }))
       );
 
-      var regionLayer = v.isJapan ? h('div', { css: 'position:absolute;left:0;top:0;' },
+      var regionLayer = v.isJapan ? h('div', { key: 'regionLayer', css: 'position:absolute;left:0;top:0;' },
         h('div', {}, v.regionPins.map(function (r) {
           return h('div', {
             key: 'rs' + r.id,
@@ -340,7 +340,7 @@
         }))
       ) : null;
 
-      var pinLayer = v.isRegion ? h('div', { css: 'position:absolute;left:0;top:0;' },
+      var pinLayer = v.isRegion ? h('div', { key: 'pinLayer', css: 'position:absolute;left:0;top:0;' },
         h('div', {}, v.pins.map(function (p) {
           return h('div', {
             key: 'ps' + p.id,
@@ -371,12 +371,13 @@
       ) : null;
 
       var board = h('div', {
+        key: 'board',
         css: 'position:absolute;left:50%;top:50%;width:600px;height:900px;margin:-450px 0 0 -300px;transform-style:preserve-3d;transition:transform .82s cubic-bezier(.22,1.32,.36,1);',
         style: { transform: v.boardTf }
       }, mapSvg, regionLayer, pinLayer);
 
       /* ---- 当たり判定＋ラベル（板の外・画面平面） ---- */
-      var hitJapan = v.isJapan ? h('div', { css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
+      var hitJapan = v.isJapan ? h('div', { key: 'hitJapan', css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
         v.regionPins.map(function (r) {
           return h('button', {
             key: 'rh' + r.id, onClick: r.onTap,
@@ -387,7 +388,7 @@
         })
       ) : null;
 
-      var hitRegion = v.isRegion ? h('div', { css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
+      var hitRegion = v.isRegion ? h('div', { key: 'hitRegion', css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
         h('div', {}, v.pins.map(function (p) {
           return h('button', {
             key: 'ph' + p.id, onClick: p.onTap,
@@ -396,7 +397,7 @@
             style: { left: p.sx + 'px', top: p.sy + 'px' }
           });
         })),
-        v.hasLabels ? h('div', { css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
+        v.hasLabels ? h('div', { key: 'labels', css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
           h('div', {}, v.labels.map(function (l) {
             return h('div', {
               key: 'lc' + l.id,
@@ -412,7 +413,7 @@
             }, l.name);
           }))
         ) : null,
-        v.isNumbered ? h('div', { css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
+        v.isNumbered ? h('div', { key: 'numbered', css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
           h('div', {}, v.labels.map(function (l) {
             return h('button', {
               key: 'nb' + l.id, onClick: l.onTap, attrs: { type: 'button' },
@@ -437,7 +438,7 @@
         ) : null
       ) : null;
 
-      var modeBar = v.isRegion ? h('div', { css: 'position:absolute;left:14px;bottom:12px;display:flex;gap:5px;background:rgba(255,250,240,.94);border:2px solid #cbb392;border-radius:999px;padding:4px;box-shadow:0 4px 0 rgba(180,150,110,.4);' },
+      var modeBar = v.isRegion ? h('div', { key: 'modeBar', css: 'position:absolute;left:14px;bottom:12px;display:flex;gap:5px;background:rgba(255,250,240,.94);border:2px solid #cbb392;border-radius:999px;padding:4px;box-shadow:0 4px 0 rgba(180,150,110,.4);' },
         [{ id: 'callout', label: '引き出し' }, { id: 'columns', label: '左右に整列' }, { id: 'numbered', label: '番号＋凡例' }, { id: 'bare', label: 'ピンだけ' }].map(function (m) {
           var on = cmp.state.lmode === m.id;
           return h('button', {
@@ -449,7 +450,7 @@
         })
       ) : null;
 
-      var topBar = h('div', { css: 'position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);' },
+      var topBar = h('div', { key: 'topBar', css: 'position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);' },
         v.isRegion ? h('button', {
           key: 'back', cls: 'nm-back', onClick: v.onBack, attrs: { type: 'button' },
           css: "border:3px solid #cbb392;background:#fffaf0;color:#4a3a2a;font-family:'Zen Maru Gothic',serif;font-weight:700;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;box-shadow:0 4px 0 #cdb28d;"
@@ -474,7 +475,7 @@
 
       var detail = v.hasSelected ? shopCard(v) : null;
 
-      var particles = h('div', { css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
+      var particles = h('div', { key: 'particles', css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
         v.parts.map(function (p) {
           return h('span', {
             key: 'pt' + p.id,
