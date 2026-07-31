@@ -29,7 +29,7 @@
       "住所に「第2広和ビル1階」が欠落していた",
       "夜の立ち飲み営業が現在も行われているかは裏取りできず、営業時間を「要確認」に修正"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "to01",
@@ -62,7 +62,7 @@
       "「ガリステごはんの拠点施設」は不正確。公式の提供店は3店あり当施設はその1つ",
       "ガリステごはんは食数限定（平日20食／土日祝40食）"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "to02",
@@ -92,6 +92,34 @@
       "住所が町名までしか無かった（大字田子字前田1-18 が正）",
       "ガリステごはんは原則前日までの予約制で、飛び込みでは食べられない可能性が高い",
       "提供は昼のみ。食べログの17:00〜23:00は寿司店としての夜営業"
+    ],
+    "geo_source": "research(GSI照合済み)"
+  },
+  {
+    "id": "to03",
+    "slug": "nakui-takko",
+    "name": "御食事処 なくい",
+    "region": "tohoku",
+    "area": "青森県 三戸郡田子町",
+    "addr": "青森県三戸郡田子町大字田子字天神堂向123",
+    "hours": "11:00〜15:00",
+    "closed_days": "木曜",
+    "tel": "0179-32-2046",
+    "genre": "steak",
+    "level": 1,
+    "menu": "田子ガーリックステーキごはん（2,200円）",
+    "price": "¥2,200",
+    "review": "ご当地グルメ「田子ガーリックステーキごはん」の提供3店のひとつ。提供数は平日40食・土日祝50食の限定で、無くなり次第終了。田子町ガーリックセンターから車ですぐ。",
+    "lat": 40.349163,
+    "lon": 141.111908,
+    "official_url": "https://www.takkogarlicsteak.com/shop.html",
+    "tabelog_url": "",
+    "sources": [
+      "https://www.takkogarlicsteak.com/shop.html"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加。田子ガーリックステーキごはんの提供3店のうち、従来のマップに載っていなかった1店"
     ],
     "geo_source": "gsi"
   },
@@ -249,7 +277,7 @@
     "corrections": [
       "新規追加（従来のマップには未掲載）"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ka06",
@@ -311,7 +339,7 @@
       "★住所の番地が誤り。「みなとみらい2-3-8 クイーンズスクエア」→ 正しくは「みなとみらい2-3-4 みなとみらい東急スクエア ステーションコア B1F」",
       "施設の現行名称は「みなとみらい東急スクエア」（2017年にクイーンズスクエア横浜から改称）。店名だけが旧称を残している"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ka08",
@@ -372,7 +400,7 @@
     "corrections": [
       "新規追加。閉店したテラスモール湘南店と入れ替わる形で GARLIC JO'S の3店舗目として掲載"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ka10",
@@ -404,6 +432,243 @@
       "にんにく専門店ではなく、にんにく料理が主役級の居酒屋のため、にんにく度を3から2に修正"
     ],
     "geo_source": "research(GSI照合済み)"
+  },
+  {
+    "id": "ka11",
+    "slug": "ninnikuya-ebisu",
+    "name": "にんにくや",
+    "region": "kanto",
+    "area": "東京都 渋谷区恵比寿",
+    "addr": "東京都渋谷区恵比寿1-26-12 フラット16 1F",
+    "hours": "11:30〜13:30／18:00〜24:00",
+    "closed_days": "月曜",
+    "tel": "03-3446-5887",
+    "genre": "bar",
+    "level": 3,
+    "menu": "ガーリックトースト",
+    "price": "",
+    "review": "1983年創業。にんにく料理専門店の草分けとされる恵比寿の店。看板のガーリックトーストは、バターと一緒に3時間ほど煮込んだ刻みにんにくをフランスパンにたっぷりのせたもので、創業当初から続く。",
+    "lat": 35.647202,
+    "lon": 139.716461,
+    "official_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1303/A130302/13003056/",
+    "sources": [
+      "https://r.gnavi.co.jp/dt7xb17g0000/",
+      "https://hitosara.com/dish/51garlic.html",
+      "https://tabelog.com/tokyo/rstLst/RC9809/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka12",
+    "slug": "garlic-mania-otsuka",
+    "name": "Garlic Mania TOKYO OTSUKA",
+    "region": "kanto",
+    "area": "東京都 豊島区北大塚",
+    "addr": "東京都豊島区北大塚2-29-3 グリーンピア大塚101",
+    "hours": "火〜土 17:30〜23:00／日祝 16:00〜22:00",
+    "closed_days": "月曜",
+    "tel": "",
+    "genre": "bar",
+    "level": 3,
+    "menu": "究極のガーリックトースト／特製にんにくソースのリブステーキ",
+    "price": "",
+    "review": "青森県田子産のにんにくを使うにんにく料理専門店。発酵バターを使った名物のガーリックトーストと、特製にんにくソースで食べるリブステーキが看板。大塚駅前駅から徒歩3分。",
+    "lat": 35.733646,
+    "lon": 139.72963,
+    "official_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1323/A132302/13283492/",
+    "sources": [
+      "https://tabelog.com/tokyo/A1323/A132302/13283492/",
+      "https://hitosara.com/0031626453/tel.html",
+      "https://tabelog.com/tokyo/rstLst/RC9809/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka13",
+    "slug": "ajo-base-kitasenju",
+    "name": "AJO BASE（アホベイス）",
+    "region": "kanto",
+    "area": "東京都 足立区千住",
+    "addr": "東京都足立区千住2-29-1",
+    "hours": "11:00〜19:00",
+    "closed_days": "毎月変動（基本は平日週1日）",
+    "tel": "03-6812-0890",
+    "genre": "shop",
+    "level": 3,
+    "menu": "鉄鍋アホピルピルライス",
+    "price": "",
+    "review": "巣鴨の「あほやにんにく堂」が北千住に構えた、にんにくのカフェ／ストア／ラボ。にんにく調味料の販売と、それを使った料理の提供を兼ねる。名物の鉄鍋アホピルピルライスは予約が要る。",
+    "lat": 35.750137,
+    "lon": 139.802155,
+    "official_url": "https://ajobase.jp/",
+    "tabelog_url": "https://tabelog.com/tokyo/A1324/A132402/13285403/",
+    "sources": [
+      "https://ajobase.jp/",
+      "https://ahoya229.com/",
+      "https://www.hotpepper.jp/strJ003341147/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka14",
+    "slug": "ahoya-ninnikudo-sugamo",
+    "name": "あほやにんにく堂",
+    "region": "kanto",
+    "area": "東京都 豊島区巣鴨",
+    "addr": "東京都豊島区巣鴨3-33-1",
+    "hours": "10:00〜18:00",
+    "closed_days": "年中無休",
+    "tel": "03-5567-1081",
+    "genre": "shop",
+    "level": 3,
+    "menu": "にんにく調味料（アホピルピル ほか）",
+    "price": "",
+    "review": "公式サイトが「日本初のにんにく専門店」と名乗る、半世紀前に巣鴨で開業した店。にんにく調味料の開発・販売が本業で、北千住の AJO BASE を系列に持つ。",
+    "lat": 35.734905,
+    "lon": 139.73645,
+    "official_url": "https://ahoya229.com/",
+    "tabelog_url": "",
+    "sources": [
+      "https://ahoya229.com/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka15",
+    "slug": "ninnikuya-nanoda-kameido",
+    "name": "にんにくやなのだ",
+    "region": "kanto",
+    "area": "東京都 江東区亀戸",
+    "addr": "東京都江東区亀戸2-20-2",
+    "hours": "17:00〜翌2:00",
+    "closed_days": "火曜",
+    "tel": "03-5875-1848",
+    "genre": "izakaya",
+    "level": 3,
+    "menu": "アイツの丸ごと揚げ（青森田子産 福地ホワイト六片）",
+    "price": "",
+    "review": "全品ににんにくを使う亀戸の居酒屋。看板の「アイツの丸ごと揚げ」は青森県田子産の福地ホワイト六片を丸ごと揚げたもの。深夜2時まで開いている。亀戸駅北口から徒歩2分。",
+    "lat": 35.697681,
+    "lon": 139.824921,
+    "official_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1312/A131202/13234571/",
+    "sources": [
+      "https://tabelog.com/tokyo/A1312/A131202/13234571/",
+      "https://www.hotpepper.jp/strJ001265728/",
+      "https://hitosara.com/0031426488/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka16",
+    "slug": "garlic-carinderia-gotanno",
+    "name": "にんにく料理酒場 Garlic Carinderia",
+    "region": "kanto",
+    "area": "東京都 足立区足立",
+    "addr": "東京都足立区足立1-10-9 1F 102",
+    "hours": "月・木・金 17:00〜翌0:00／土日祝 15:00〜翌0:00",
+    "closed_days": "火曜・水曜",
+    "tel": "03-6822-2729",
+    "genre": "bar",
+    "level": 3,
+    "menu": "にんにくのアヒージョ／ガーリックペーストのカルボナーラ",
+    "price": "",
+    "review": "五反野のにんにく料理専門の酒場。にんにくのアヒージョや、自家製ガーリックペーストを使ったカルボナーラなどを出す。五反野駅から徒歩7分。",
+    "lat": 35.76371,
+    "lon": 139.804443,
+    "official_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1324/A132404/13270041/",
+    "sources": [
+      "https://tabelog.com/tokyo/A1324/A132404/13270041/dtlmenu/",
+      "https://www.hotpepper.jp/strJ002647601/",
+      "https://tabelog.com/tokyo/rstLst/RC9809/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka17",
+    "slug": "yamabudo-nezu",
+    "name": "あひーじょバル＆ごはん 山ぶどう",
+    "region": "kanto",
+    "area": "東京都 文京区根津",
+    "addr": "東京都文京区根津1-1-11 2F",
+    "hours": "ランチ 11:30〜14:45（L.O.）／ディナー 17:00〜21:00（L.O.）22:00close",
+    "closed_days": "水曜",
+    "tel": "03-5832-9381",
+    "genre": "bar",
+    "level": 2,
+    "menu": "具材が選べるアヒージョ（30種以上から）",
+    "price": "",
+    "review": "アヒージョ専門店。30種以上の具材から選んでカスタマイズできるのが特徴で、納豆やキムチといった変化球も置く。にんにくとオリーブオイルが全皿の土台になる。根津の赤札堂そば。",
+    "lat": 35.717651,
+    "lon": 139.764908,
+    "official_url": "https://nezu-yamabudo.com/",
+    "tabelog_url": "https://tabelog.com/tokyo/A1311/A131106/13194441/",
+    "sources": [
+      "https://nezu-yamabudo.com/",
+      "https://r.gnavi.co.jp/bux8um050000/",
+      "https://tabelog.com/tokyo/rstLst/RC9809/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加。にんにく専門店ではなくアヒージョ専門店のため、にんにく度は2とした"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ka18",
+    "slug": "purushin-shinjuku",
+    "name": "にんにく焼肉 プルシン 新宿店",
+    "region": "kanto",
+    "area": "東京都 新宿区大久保",
+    "addr": "東京都新宿区大久保2-6-17 シルバープラザ新宿第2",
+    "hours": "17:00〜翌3:00（L.O.翌2:00）",
+    "closed_days": "木曜",
+    "tel": "03-6265-9876",
+    "genre": "steak",
+    "level": 2,
+    "menu": "にんにく塩だれのタン・ホルモン",
+    "price": "",
+    "review": "沖縄発の「にんにく焼肉」チェーンの新宿店。にんにく塩だれに漬けたタンやホルモンが看板で、深夜3時まで営業する。新大久保エリア。",
+    "lat": 35.701233,
+    "lon": 139.707947,
+    "official_url": "",
+    "tabelog_url": "",
+    "sources": [
+      "https://www.hotpepper.jp/strJ004214510/",
+      "https://hitosara.com/0031595560/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
   },
   {
     "id": "ch01",
@@ -494,7 +759,7 @@
     "corrections": [
       "新規追加。従来掲載の「ベトコンラーメン新京 本店（一宮市松島町）」は閉店しており、公式サイトの店舗一覧にも無い。現在の旗艦店はこの伏見店"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch04",
@@ -522,7 +787,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch05",
@@ -550,7 +815,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch06",
@@ -578,7 +843,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch07",
@@ -606,7 +871,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch08",
@@ -634,7 +899,7 @@
     "corrections": [
       "新規追加。公式サイトの住所表記は旧字の「各務ヶ原」だが、現行の行政区画は各務原市"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch09",
@@ -664,7 +929,7 @@
     "corrections": [
       "新規追加。ベトコンラーメンの発祥説は新京系と香楽系の2系統あり、どちらか一方を「元祖」と断定しないよう記述した"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch10",
@@ -694,7 +959,7 @@
     "corrections": [
       "新規追加。静岡県で唯一確認できたにんにく主体の店"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ch11",
@@ -724,7 +989,7 @@
     "corrections": [
       "新規追加。北陸で確認できた唯一のにんにく主体の店"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "kn01",
@@ -753,7 +1018,7 @@
     "corrections": [
       "新規追加。営業時間・定休日は媒体間で大きく食い違うため「要確認」とした"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "kn02",
@@ -783,7 +1048,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "kn03",
@@ -811,7 +1076,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "kn04",
@@ -839,7 +1104,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "kn05",
@@ -867,7 +1132,7 @@
     "corrections": [
       "新規追加"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "cg01",
@@ -895,7 +1160,7 @@
     "corrections": [
       "新規追加。従来は中国地方の掲載がゼロだった"
     ],
-    "geo_source": "gsi"
+    "geo_source": "research(GSI照合済み)"
   },
   {
     "id": "ky01",
@@ -927,5 +1192,152 @@
       "定休日は木曜ではなく月曜"
     ],
     "geo_source": "research(GSI照合済み)"
+  },
+  {
+    "id": "ky02",
+    "slug": "garlic-lab-kagoshima",
+    "name": "スプラウトにんにく料理専門店 ガーリック・ラボ",
+    "region": "kyushu",
+    "area": "鹿児島県 霧島市国分中央",
+    "addr": "鹿児島県霧島市国分中央3-34-2 1F",
+    "hours": "火〜日 18:00〜23:30（L.O.23:00）",
+    "closed_days": "月曜",
+    "tel": "070-9065-3944",
+    "genre": "bar",
+    "level": 3,
+    "menu": "超ガーリックペペロンチーノ（1,300円）／ハワイアンガーリックシュリンプ（1,200円）",
+    "price": "¥3,000〜¥4,000",
+    "review": "にんにく農家が手がけるスプラウトにんにくの専門店。芽まで丸ごと食べられるにんにくを使い、においが残りにくいのが売り。2023年3月開業。",
+    "lat": 31.738272,
+    "lon": 130.764862,
+    "official_url": "https://www.instagram.com/garlic_lab/",
+    "tabelog_url": "",
+    "sources": [
+      "https://www.hotpepper.jp/strJ004536580/",
+      "https://leapleap.jp/news/9443/",
+      "https://kirishima-aira.mypl.net/article/newopen_kirishima-aira/76712"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加。ホットペッパー上は「霧島店」「鹿児島店」の2ページがあるが住所は同一で同じ1店舗"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ok01",
+    "slug": "purushin-kumoji",
+    "name": "にんにく焼肉 プルシン 久茂地店",
+    "region": "okinawa",
+    "area": "沖縄県 那覇市久茂地",
+    "addr": "沖縄県那覇市久茂地3-9-9 九番地ビル1F",
+    "hours": "17:00〜23:00（L.O.22:00）",
+    "closed_days": "月曜",
+    "tel": "098-943-6588",
+    "genre": "steak",
+    "level": 2,
+    "menu": "にんにく焼肉（特製タレ）",
+    "price": "",
+    "review": "公式サイトが「日本初!? にんにく焼肉＆セルフ飲み放題の店」と名乗る那覇の焼肉店。特製のにんにくダレを絡めた焼肉が看板。",
+    "lat": 26.21468,
+    "lon": 127.681107,
+    "official_url": "https://fbuc500.gorp.jp/",
+    "tabelog_url": "",
+    "sources": [
+      "https://fbuc500.gorp.jp/",
+      "https://www.hotpepper.jp/strJ001183984/",
+      "https://www.otv.co.jp/okitive/article/57629/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加。従来は沖縄の掲載がゼロだった"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ok02",
+    "slug": "purushin-miyakojima",
+    "name": "にんにく焼肉 プルシン 宮古島店",
+    "region": "okinawa",
+    "area": "沖縄県 宮古島市平良下里",
+    "addr": "沖縄県宮古島市平良下里83-3",
+    "hours": "月〜水・金・日 11:00〜14:00／17:00〜23:00、木・土 17:00〜23:00",
+    "closed_days": "不定休",
+    "tel": "050-5494-7094",
+    "genre": "steak",
+    "level": 2,
+    "menu": "赤ミックス（大）2,600円／牛タンミックス 2,700円",
+    "price": "¥2,600〜",
+    "review": "那覇の久茂地店と同じ「にんにく焼肉」チェーンの宮古島店。にんにくを効かせた焼肉とセルフ飲み放題の組み合わせが売り。昼営業のある曜日がある。",
+    "lat": 24.803795,
+    "lon": 125.278259,
+    "official_url": "https://fbuc501.gorp.jp/",
+    "tabelog_url": "",
+    "sources": [
+      "https://fbuc501.gorp.jp/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ok03",
+    "slug": "crazy-garlic-shrimp-motobu",
+    "name": "クレイジーガーリックシュリンプ",
+    "region": "okinawa",
+    "area": "沖縄県 国頭郡本部町谷茶",
+    "addr": "沖縄県国頭郡本部町谷茶29-70",
+    "hours": "8:00〜16:00",
+    "closed_days": "不定休",
+    "tel": "090-5220-2021",
+    "genre": "shop",
+    "level": 3,
+    "menu": "クレイジーBOX／HOTクレイジーBOX",
+    "price": "",
+    "review": "美ら海水族館のすぐ近くにあるガーリックシュリンプのキッチンカー。公式サイトは「鮨屋の大将が監修」「たっぷりのニンニクとプリプリのエビ」と説明している。2025年3月グランドオープン。",
+    "lat": 26.658459,
+    "lon": 127.888939,
+    "official_url": "https://crazygarlicshrimp.com/",
+    "tabelog_url": "https://tabelog.com/okinawa/A4702/A470202/47033306/",
+    "sources": [
+      "https://crazygarlicshrimp.com/",
+      "https://tabelog.com/okinawa/A4702/A470202/47033306/",
+      "https://www.instagram.com/crazy_garlic_shrimp_8/"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
+  },
+  {
+    "id": "ok04",
+    "slug": "the-garlic-shrimp-onna",
+    "name": "THE GARLIC SHRIMP",
+    "region": "okinawa",
+    "area": "沖縄県 国頭郡恩納村安冨祖",
+    "addr": "沖縄県国頭郡恩納村安冨祖1355-2",
+    "hours": "11:00〜20:30（L.O.20:00）※無くなり次第終了",
+    "closed_days": "不定休",
+    "tel": "",
+    "genre": "shop",
+    "level": 3,
+    "menu": "THE GARLIC SHRIMP／LEMON GARLIC SHRIMP／RED BLACK GARLIC SHRIMP",
+    "price": "",
+    "review": "恩納村のガーリックシュリンプ専門店。厳選した海老と独自の調理法で作るガーリックシュリンプを、レモン、レッドブラックなど数種類の味で出す。ガーリックビーフもある。",
+    "lat": 26.497744,
+    "lon": 127.890747,
+    "official_url": "https://thegarlicshrimp.com/",
+    "tabelog_url": "",
+    "sources": [
+      "https://thegarlicshrimp.com/",
+      "https://www.okinawastory.jp/gourmet/600015304"
+    ],
+    "was_existing": false,
+    "corrections": [
+      "新規追加"
+    ],
+    "geo_source": "gsi"
   }
 ]

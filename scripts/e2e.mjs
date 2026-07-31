@@ -81,6 +81,40 @@ async function newPage(w, h) {
   await page.close();
 }
 
+/* ---- 1b. 一番混んでいる地域でラベルが全部読めるか ----
+   店が増えるとラベル衝突回避が破綻しうるので、密度の回帰を機械で捕まえる */
+{
+  const shops = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'shops.json'), 'utf8'));
+  const counts = {};
+  shops.forEach((s) => { counts[s.region] = (counts[s.region] || 0) + 1; });
+  const densest = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+
+  const page = await newPage(1440, 900);
+  await page.goto(`${BASE}/#/area/${densest}`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2000);
+  const r = await page.evaluate(() => {
+    const pins = document.querySelectorAll('.nm-pin').length;
+    const labels = [...document.querySelectorAll('.nm-label')].map((el) => ({ n: el.textContent.trim(), r: el.getBoundingClientRect() }));
+    const bad = [];
+    for (let i = 0; i < labels.length; i++) {
+      for (let j = i + 1; j < labels.length; j++) {
+        const a = labels[i].r, c = labels[j].r;
+        const ox = Math.min(a.right, c.right) - Math.max(a.left, c.left);
+        const oy = Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top);
+        if (ox > 12 && oy > 12) bad.push(`${labels[i].n} × ${labels[j].n}`);
+      }
+    }
+    const stage = document.querySelector('.nm-pin')?.closest('[style*="perspective"]')?.getBoundingClientRect();
+    const outside = stage ? labels.filter((x) => x.r.left < stage.left - 2 || x.r.right > stage.right + 2 || x.r.top < stage.top - 2 || x.r.bottom > stage.bottom + 2).map((x) => x.n) : [];
+    return { pins, labels: labels.length, bad, outside };
+  });
+  r.labels === r.pins ? ok(`最密地域(${densest}) ${r.pins}軒: ラベルが全部出ている`) : bad(`${densest}: ピン${r.pins}に対しラベル${r.labels}（欠落あり）`);
+  r.bad.length === 0 ? ok(`${densest}: ラベルの実質的な重なりなし`) : bad(`${densest}: ラベルが重なっている — ${r.bad.slice(0, 3).join(' / ')}`);
+  r.outside.length === 0 ? ok(`${densest}: ラベルが地図の外にはみ出していない`) : bad(`${densest}: はみ出し — ${r.outside.slice(0, 3).join(' / ')}`);
+  await page.screenshot({ path: path.join(SHOTS, `04-densest-${densest}.png`) });
+  await page.close();
+}
+
 /* ---- 2. ハッシュURLで直接その店を開けるか ---- */
 {
   const shops = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'shops.json'), 'utf8'));
