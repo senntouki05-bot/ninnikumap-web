@@ -1,0 +1,577 @@
+/* にんにくマップ — 静的サイトビルド（依存ゼロ）
+   data/shops.json + data/regions.json から
+     public/data.js            … アプリが読む店舗データ
+     public/index.html         … 地図＋「素のHTMLで読める全店リスト」
+     public/area/<region>/     … 地域ページ
+     public/genre/<genre>/     … ジャンルページ
+     public/shop/<slug>/       … 店ページ
+     public/list/              … 全店一覧
+     public/about/ /contact/ /privacy/
+     public/sitemap.xml, robots.txt
+   を生成する。
+
+   ⚠️ import.meta.url は使わない（過去にバンドル実行で1階層ズレた事故があるため）。
+      パスは process.cwd() 固定で、実在検証してから書く。
+   ⚠️ 本文中の件数は必ず機械集計する。手で数字を書かない。
+*/
+import fs from 'node:fs';
+import path from 'node:path';
+
+const ROOT = process.cwd();
+const PUB = path.join(ROOT, 'public');
+const DATA = path.join(ROOT, 'data');
+
+if (!fs.existsSync(path.join(PUB, 'app.js'))) {
+  console.error(`public/app.js が見つからない。cwd=${ROOT} がプロジェクト直下か確認すること。`);
+  process.exit(1);
+}
+
+const SITE = JSON.parse(fs.readFileSync(path.join(DATA, 'site.json'), 'utf8'));
+const ORIGIN = SITE.origin.replace(/\/$/, '');
+const shops = JSON.parse(fs.readFileSync(path.join(DATA, 'shops.json'), 'utf8'));
+const regions = JSON.parse(fs.readFileSync(path.join(DATA, 'regions.json'), 'utf8'));
+
+const GENRES = [
+  { id: 'steak', label: 'ステーキ・肉', desc: 'にんにくをきかせたステーキ・焼肉・肉料理の店' },
+  { id: 'ramen', label: 'ラーメン', desc: 'にんにくが主役のラーメン・つけ麺の店' },
+  { id: 'bar', label: 'バル・イタリアン', desc: 'アヒージョやガーリックトーストで攻めるバル・イタリアン' },
+  { id: 'izakaya', label: '居酒屋', desc: 'にんにく料理をつまみに飲める居酒屋・大衆酒場' },
+  { id: 'chuka', label: '中華・アジア', desc: 'にんにくを効かせた中華・アジア料理の店' },
+  { id: 'shop', label: 'カフェ・物販', desc: 'にんにくそのものを買える店やカフェ' },
+];
+const LEVELS = {
+  3: { label: 'にんにく100%', desc: 'メニューのほぼ全部がにんにく料理。にんにくを食べに行く店。' },
+  2: { label: 'にんにく推し', desc: '専門店ではないけれど、にんにく料理が主役級で選べる店。' },
+  1: { label: '名物あり', desc: 'ふつうの店だが、名物のにんにく料理が知られている。' },
+};
+
+/* FAQ の答えは、必ずデータから機械的に組み立てるか、検証済みの事実だけを書く */
+const FAQ = [
+  {
+    q: 'にんにく専門店とは、どういう店ですか？',
+    a: 'このサイトでは「メニューのほぼ全部がにんにく料理で、にんにくを食べに行くために入る店」を専門店（にんにく100%）としています。前菜からデザートまでにんにくを使う店や、店名・看板がにんにくを掲げている店が該当します。にんにく料理が1〜2品あるだけの店は掲載していません。',
+  },
+  {
+    q: '掲載している情報はどこから取っていますか？',
+    a: '店舗の公式サイト・公式SNS、大手グルメサイト、自治体や観光協会の公開情報です。各店のページ末尾に、確認に使った情報源を載せています。閉店・移転が確認できた店は掲載していません。',
+  },
+  {
+    q: '独自の点数やランキングはありますか？',
+    a: 'ありません。他サイトの評価点も転載していません。掲載しているのは「にんにくがどれくらい主役か」という3段階の分類だけです。',
+  },
+  {
+    q: '営業時間は必ず正しいですか？',
+    a: '掲載時点で確認できた内容ですが、営業時間や定休日は変わります。訪問前に必ず店舗の最新情報をご確認ください。誤りを見つけた場合はお問い合わせからお知らせいただけると助かります。',
+  },
+  {
+    q: 'お店の掲載や、掲載の取り下げをお願いできますか？',
+    a: 'どちらも受け付けています。<a href="/contact/">お問い合わせ</a>からご連絡ください。掲載依頼は内容を確認のうえ、裏取りができたものを掲載します。店舗関係者からの取り下げ依頼は確認のうえ速やかに対応します。',
+  },
+];
+
+/* ---------------- ユーティリティ ---------------- */
+const esc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const byRegion = (id) => shops.filter((s) => s.region === id);
+const byGenre = (id) => shops.filter((s) => s.genre === id);
+const regionOf = (id) => regions.find((r) => r.id === id);
+const genreOf = (id) => GENRES.find((g) => g.id === id);
+
+function write(rel, content) {
+  const full = path.join(PUB, rel);
+  fs.mkdirSync(path.dirname(full), { recursive: true });
+  fs.writeFileSync(full, content);
+  return rel;
+}
+
+/* ---------------- 検証（壊れたまま出さない） ---------------- */
+{
+  const errs = [];
+  const slugs = new Set();
+  for (const s of shops) {
+    if (!s.id) errs.push(`id が無い: ${s.name}`);
+    if (!s.slug) errs.push(`slug が無い: ${s.name}`);
+    if (s.slug && !/^[a-z0-9-]+$/.test(s.slug)) errs.push(`slug がURL安全でない: ${s.name} → ${s.slug}`);
+    if (s.slug && slugs.has(s.slug)) errs.push(`slug が重複: ${s.slug}`);
+    slugs.add(s.slug);
+    if (typeof s.lat !== 'number' || typeof s.lon !== 'number') errs.push(`座標が無い: ${s.name}`);
+    if (s.lat < 20 || s.lat > 46 || s.lon < 122 || s.lon > 154) errs.push(`座標が日本の範囲外: ${s.name} (${s.lat},${s.lon})`);
+    if (!regionOf(s.region)) errs.push(`地域IDが不正: ${s.name} → ${s.region}`);
+    if (!genreOf(s.genre)) errs.push(`ジャンルIDが不正: ${s.name} → ${s.genre}`);
+    if (![1, 2, 3].includes(s.level)) errs.push(`にんにく度が不正: ${s.name} → ${s.level}`);
+    if (!s.sources || !s.sources.length) errs.push(`出典が無い: ${s.name}`);
+    // 都道府県名が area の先頭に入っているか（地域ページの見出しで使う）
+    if (!s.area || !/[都道府県]/.test(s.area)) errs.push(`area が都道府県から始まっていない: ${s.name} → ${s.area}`);
+  }
+  if (errs.length) {
+    console.error('データ検証で不合格:\n' + errs.map((e) => '  × ' + e).join('\n'));
+    process.exit(1);
+  }
+}
+
+/* ---------------- 共通レイアウト ---------------- */
+const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;800&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">`;
+
+function layout({ title, desc, canonical, body, jsonld = [], appShell = false, crumbs = null }) {
+  const url = ORIGIN + canonical;
+  const ld = jsonld.length
+    ? jsonld.map((o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join('')
+    : '';
+  return `<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="${esc(url)}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="${esc(SITE.name)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(url)}">
+<meta property="og:image" content="${esc(ORIGIN)}/assets/og.png">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#efe2cd">
+${FONTS}
+<link rel="stylesheet" href="/styles.css">
+${ld}
+</head>
+<body>
+${crumbs ? `<nav class="nm-crumbs" aria-label="パンくず">${crumbs}</nav>` : ''}
+${body}
+<footer class="nm-foot">
+  <nav>
+    <a href="/">地図トップ</a>
+    <a href="/list/">全店一覧</a>
+    <a href="/about/">このサイトについて</a>
+    <a href="/contact/">お店の情報提供・掲載依頼</a>
+    <a href="/privacy/">プライバシーポリシー</a>
+  </nav>
+  <div>${esc(SITE.name)}｜掲載情報は各店舗の公式サイト・大手グルメサイト等の公開情報をもとにしています。訪問前に必ず店舗の最新情報をご確認ください。</div>
+  <div>地図の形状データ: Natural Earth（パブリックドメイン）／住所の座標: 国土地理院 地理院地図Vector提供の住所検索API</div>
+</footer>
+${appShell ? '<script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
+</body>
+</html>
+`;
+}
+
+function crumbTrail(items) {
+  return items.map((i, n) => (n === items.length - 1
+    ? `<span aria-current="page">${esc(i.name)}</span>`
+    : `<a href="${esc(i.url)}">${esc(i.name)}</a>`)).join(' › ');
+}
+function crumbLd(items) {
+  return {
+    '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+    itemListElement: items.map((i, n) => ({ '@type': 'ListItem', position: n + 1, name: i.name, item: ORIGIN + i.url })),
+  };
+}
+
+/* ---------------- 店カード（静的HTML） ---------------- */
+function shopCard(s, { showRegion = false } = {}) {
+  const r = regionOf(s.region);
+  const g = genreOf(s.genre);
+  return `<article class="nm-card">
+  <h3><span class="nm-badge lv${s.level}">${esc(LEVELS[s.level].label)}</span><a href="/shop/${esc(s.slug)}/">${esc(s.name)}</a></h3>
+  <div class="nm-area">${esc(s.area)}${showRegion ? `（${esc(r.name)}）` : ''}・${esc(g.label)}</div>
+  <p class="nm-menu">${esc(s.menu)}${s.price ? `／${esc(s.price)}` : ''}</p>
+  <dl>
+    <dt>住所</dt><dd>${esc(s.addr)}</dd>
+    <dt>営業時間</dt><dd>${esc(s.hours || '要確認')}${s.closed_days ? `（休み：${esc(s.closed_days)}）` : ''}</dd>
+  </dl>
+</article>`;
+}
+
+function cardGrid(list, opts) {
+  return `<div class="nm-cards">${list.map((s) => shopCard(s, opts)).join('\n')}</div>`;
+}
+
+/* ---------------- 1. トップ ---------------- */
+{
+  const total = shops.length;
+  const lv3 = shops.filter((s) => s.level === 3).length;
+  const prefs = new Set(shops.map((s) => s.area.split(/[ 　]/)[0]));
+  const activeRegions = regions.filter((r) => byRegion(r.id).length > 0);
+
+  const regionLines = regions.map((r) => {
+    const n = byRegion(r.id).length;
+    return `<li><a href="/area/${r.id}/">${esc(r.name)}のにんにく店</a>：${n} 軒${n === 0 ? '（調査中）' : ''}</li>`;
+  }).join('');
+
+  const staticList = activeRegions.map((r) => {
+    const list = byRegion(r.id);
+    return `<section id="area-${r.id}">
+  <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">${esc(r.name)}のにんにく専門店・名店（${list.length}軒）</h2>
+  <p>${esc(r.blurb)}。${esc(r.name)}で確認できたお店を一覧にしました。<a href="/area/${r.id}/">${esc(r.name)}のページ</a>にもまとめています。</p>
+  ${cardGrid(list)}
+</section>`;
+  }).join('\n');
+
+  const body = `
+<div id="nm-app"></div>
+
+<main class="nm-doc">
+  <section class="nm-panel">
+    <h1>にんにくマップ｜全国のにんにく専門店・にんにく料理の名店 ${total}軒</h1>
+    <p class="nm-lede">
+      「今日はにんにくを浴びたい」という日に開くための地図です。日本全国から、<strong>メニューのほとんどがにんにく料理という専門店</strong>や、
+      <strong>にんにく料理が名物として知られている店</strong>だけを集めて ${total} 軒を掲載しています（${prefs.size} 都道府県／うちにんにく専門店は ${lv3} 軒）。
+      掲載の可否は、店舗の公式サイト・公式SNS・大手グルメサイト・自治体や観光協会の情報を一件ずつ確認したうえで判断しています。
+    </p>
+    <p>
+      上の地図は、地域をタップ → お店のピンをタップの順で使います。ジャンルや「にんにく度」でも絞り込めます。
+      地図が使えない環境の方は、下の一覧からどうぞ。
+    </p>
+    <div class="nm-tags">
+      ${GENRES.filter((g) => byGenre(g.id).length).map((g) => `<a href="/genre/${g.id}/">${esc(g.label)}（${byGenre(g.id).length}）</a>`).join('')}
+    </div>
+  </section>
+
+  <section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">「にんにく度」の見かた</h2>
+    <ul>
+      ${[3, 2, 1].map((n) => `<li><span class="nm-badge lv${n}">${esc(LEVELS[n].label)}</span>${esc(LEVELS[n].desc)}（${shops.filter((s) => s.level === n).length}軒）</li>`).join('')}
+    </ul>
+    <p class="nm-note">
+      「たまたまガーリックトーストがある」程度の店は掲載していません。にんにくが看板になっている店だけを載せる方針です。
+    </p>
+  </section>
+
+  <section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">地域からさがす</h2>
+    <ul>${regionLines}</ul>
+  </section>
+
+  ${staticList}
+
+  <section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">よくある質問</h2>
+    ${FAQ.map((f) => `<h3>${esc(f.q)}</h3><p>${f.a}</p>`).join('')}
+  </section>
+</main>`;
+
+  const ld = [
+    { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.name, url: ORIGIN + '/', inLanguage: 'ja' },
+    {
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      name: '全国のにんにく専門店・にんにく料理の名店',
+      numberOfItems: shops.length,
+      itemListElement: shops.map((s, i) => ({ '@type': 'ListItem', position: i + 1, url: `${ORIGIN}/shop/${s.slug}/`, name: s.name })),
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'FAQPage',
+      mainEntity: FAQ.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a.replace(/<[^>]+>/g, '') } })),
+    },
+  ];
+
+  write('index.html', layout({
+    title: `にんにくマップ｜全国のにんにく専門店・にんにく料理の名店${total}軒`,
+    desc: `全国のにんにく専門店とにんにく料理の名店を${total}軒、地図から探せます。${prefs.size}都道府県／にんにく100%の専門店${lv3}軒。営業時間・住所・看板メニューつき。`,
+    canonical: '/', body, jsonld: ld, appShell: true,
+  }));
+}
+
+/* ---------------- 2. 地域ページ ---------------- */
+for (const r of regions) {
+  const list = byRegion(r.id);
+  const crumbs = [{ name: 'にんにくマップ', url: '/' }, { name: `${r.name}のにんにく店`, url: `/area/${r.id}/` }];
+  const prefs = [...new Set(list.map((s) => s.area.split(/[ 　]/)[0]))];
+
+  const body = `<main class="nm-doc">
+  <section class="nm-panel">
+    <h1>${esc(r.name)}のにんにく専門店・にんにく料理の名店（${list.length}軒）</h1>
+    ${list.length ? `<p class="nm-lede">${esc(r.blurb)}。${esc(r.name)}（${esc(prefs.join('・'))}）で確認できた、にんにくが看板のお店 ${list.length} 軒です。地図から探したいときは<a href="/#/area/${r.id}">トップの地図</a>をどうぞ。</p>
+    ${cardGrid(list)}`
+      : `<p class="nm-lede">${esc(r.name)}は現在まだ掲載店がありません。にんにくが看板の店をご存じでしたら、<a href="/contact/">情報提供フォーム</a>から教えてください。裏取りのうえ掲載します。</p>`}
+  </section>
+  <section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">ほかの地域</h2>
+    <div class="nm-tags">${regions.filter((x) => x.id !== r.id).map((x) => `<a href="/area/${x.id}/">${esc(x.name)}（${byRegion(x.id).length}）</a>`).join('')}</div>
+  </section>
+</main>`;
+
+  const ld = [crumbLd(crumbs)];
+  if (list.length) {
+    ld.push({
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      name: `${r.name}のにんにく専門店・名店`, numberOfItems: list.length,
+      itemListElement: list.map((s, i) => ({ '@type': 'ListItem', position: i + 1, url: `${ORIGIN}/shop/${s.slug}/`, name: s.name })),
+    });
+  }
+
+  write(`area/${r.id}/index.html`, layout({
+    title: `${r.name}のにんにく専門店・にんにく料理の名店${list.length}軒｜にんにくマップ`,
+    desc: list.length
+      ? `${r.name}（${prefs.join('・')}）のにんにく専門店・にんにく料理の名店を${list.length}軒まとめました。住所・営業時間・看板メニューつき。`
+      : `${r.name}のにんにく専門店を調査中です。ご存じのお店があれば情報提供をお願いします。`,
+    canonical: `/area/${r.id}/`, body, jsonld: ld,
+    crumbs: crumbTrail(crumbs),
+  }));
+}
+
+/* ---------------- 3. ジャンルページ ---------------- */
+for (const g of GENRES) {
+  const list = byGenre(g.id);
+  if (!list.length) continue;
+  const crumbs = [{ name: 'にんにくマップ', url: '/' }, { name: g.label, url: `/genre/${g.id}/` }];
+  const body = `<main class="nm-doc">
+  <section class="nm-panel">
+    <h1>にんにくが名物の${esc(g.label)}（${list.length}軒）</h1>
+    <p class="nm-lede">${esc(g.desc)}を全国から${list.length}軒。</p>
+    ${cardGrid(list, { showRegion: true })}
+  </section>
+  <section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">ほかのジャンル</h2>
+    <div class="nm-tags">${GENRES.filter((x) => x.id !== g.id && byGenre(x.id).length).map((x) => `<a href="/genre/${x.id}/">${esc(x.label)}（${byGenre(x.id).length}）</a>`).join('')}</div>
+  </section>
+</main>`;
+  write(`genre/${g.id}/index.html`, layout({
+    title: `にんにくが名物の${g.label}${list.length}軒｜にんにくマップ`,
+    desc: `${g.desc}を全国から${list.length}軒まとめました。住所・営業時間・看板メニューつき。`,
+    canonical: `/genre/${g.id}/`, body,
+    jsonld: [crumbLd(crumbs), {
+      '@context': 'https://schema.org', '@type': 'ItemList', name: `にんにくが名物の${g.label}`, numberOfItems: list.length,
+      itemListElement: list.map((s, i) => ({ '@type': 'ListItem', position: i + 1, url: `${ORIGIN}/shop/${s.slug}/`, name: s.name })),
+    }],
+    crumbs: crumbTrail(crumbs),
+  }));
+}
+
+/* ---------------- 4. 店ページ ---------------- */
+for (const s of shops) {
+  const r = regionOf(s.region), g = genreOf(s.genre);
+  const crumbs = [
+    { name: 'にんにくマップ', url: '/' },
+    { name: `${r.name}のにんにく店`, url: `/area/${r.id}/` },
+    { name: s.name, url: `/shop/${s.slug}/` },
+  ];
+  const near = byRegion(s.region).filter((x) => x.id !== s.id).slice(0, 6);
+  const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${s.name} ${s.addr}`);
+
+  const rows = [
+    ['住所', esc(s.addr)],
+    ['営業時間', esc(s.hours || '要確認')],
+    ['定休日', esc(s.closed_days || '要確認')],
+    s.tel ? ['電話', esc(s.tel)] : null,
+    ['ジャンル', `<a href="/genre/${g.id}/">${esc(g.label)}</a>`],
+    ['にんにく度', `<span class="nm-badge lv${s.level}">${esc(LEVELS[s.level].label)}</span>${esc(LEVELS[s.level].desc)}`],
+    ['看板メニュー', esc(s.menu) + (s.price ? `（${esc(s.price)}）` : '')],
+    s.official_url ? ['公式サイト', `<a href="${esc(s.official_url)}" rel="nofollow noopener" target="_blank">${esc(s.official_url)}</a>`] : null,
+  ].filter(Boolean);
+
+  const body = `<main class="nm-doc">
+  <section class="nm-panel">
+    <h1>${esc(s.name)}｜${esc(s.area)}のにんにく${esc(g.label)}</h1>
+    <p class="nm-lede">${esc(s.review)}</p>
+    <table class="nm-table">
+      ${rows.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${v}</td></tr>`).join('')}
+    </table>
+    <div class="nm-tags" style="margin-top:16px">
+      <a href="${esc(mapUrl)}" target="_blank" rel="noopener">地図アプリでひらく</a>
+      <a href="/#/shop/${esc(s.id)}">にんにくマップで見る</a>
+    </div>
+    <p class="nm-note" style="margin-top:14px">
+      出典：${s.sources.map((u) => `<a href="${esc(u)}" rel="nofollow noopener" target="_blank">${esc(hostOf(u))}</a>`).join('、')}<br>
+      営業時間・定休日は変更されることがあります。訪問前に店舗の最新情報をご確認ください。誤りを見つけたら<a href="/contact/">こちら</a>からお知らせください。
+    </p>
+  </section>
+  ${near.length ? `<section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25">${esc(r.name)}のほかのにんにく店</h2>
+    ${cardGrid(near)}
+    <div class="nm-tags"><a href="/area/${r.id}/">${esc(r.name)}のにんにく店をぜんぶ見る（${byRegion(r.id).length}軒）</a></div>
+  </section>` : ''}
+</main>`;
+
+  const restaurant = {
+    '@context': 'https://schema.org', '@type': 'Restaurant',
+    name: s.name,
+    address: { '@type': 'PostalAddress', addressCountry: 'JP', streetAddress: s.addr },
+    geo: { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lon },
+    servesCuisine: g.label,
+    url: `${ORIGIN}/shop/${s.slug}/`,
+  };
+  if (s.tel) restaurant.telephone = s.tel;
+  if (s.official_url) restaurant.sameAs = [s.official_url];
+
+  write(`shop/${s.slug}/index.html`, layout({
+    title: `${s.name}（${s.area}）｜にんにくマップ`,
+    desc: `${s.name}（${s.area}）のにんにく情報。看板メニューは${s.menu}。住所・営業時間・定休日つきで紹介しています。`,
+    canonical: `/shop/${s.slug}/`, body,
+    jsonld: [crumbLd(crumbs), restaurant],
+    crumbs: crumbTrail(crumbs),
+  }));
+}
+
+/* ---------------- 5. 全店一覧 ---------------- */
+{
+  const crumbs = [{ name: 'にんにくマップ', url: '/' }, { name: '全店一覧', url: '/list/' }];
+  const body = `<main class="nm-doc">
+  <section class="nm-panel">
+    <h1>にんにくマップ 掲載店 全${shops.length}軒の一覧</h1>
+    <p class="nm-lede">地域別に並べた全掲載店の一覧です。</p>
+  </section>
+  ${regions.filter((r) => byRegion(r.id).length).map((r) => `<section class="nm-panel">
+    <h2><img src="/assets/garlic-sm.svg" alt="" width="24" height="25"><a href="/area/${r.id}/">${esc(r.name)}</a>（${byRegion(r.id).length}軒）</h2>
+    ${cardGrid(byRegion(r.id))}
+  </section>`).join('')}
+</main>`;
+  write('list/index.html', layout({
+    title: `掲載店 全${shops.length}軒の一覧｜にんにくマップ`,
+    desc: `にんにくマップに掲載している全${shops.length}軒を地域別に一覧できます。`,
+    canonical: '/list/', body, jsonld: [crumbLd(crumbs)], crumbs: crumbTrail(crumbs),
+  }));
+}
+
+/* ---------------- 6. 固定ページ ---------------- */
+{
+  const pages = [
+    {
+      slug: 'about', title: 'このサイトについて', desc: 'にんにくマップの掲載基準・情報源・更新方針について。',
+      body: `<h1>このサイトについて</h1>
+<p>「にんにくマップ」は、にんにく好きが今日行く店を決めるための地図です。運営は個人です。</p>
+<h2>掲載の基準</h2>
+<p>にんにくが店の看板になっているかどうかで判断しています。具体的には次の3段階です。</p>
+<ul>
+${[3, 2, 1].map((n) => `<li><strong>${esc(LEVELS[n].label)}</strong>：${esc(LEVELS[n].desc)}</li>`).join('')}
+</ul>
+<p>「メニューの中にガーリックトーストが1品ある」といった店は掲載していません。</p>
+<h2>情報の裏取り</h2>
+<p>掲載にあたっては、店舗の公式サイト・公式SNS、大手グルメサイト、自治体や観光協会の情報を一件ずつ確認しています。閉店・移転が確認できた店は掲載しません。各店ページの末尾に、確認に使った情報源を記載しています。</p>
+<p>それでも、営業時間や定休日は変わります。<strong>訪問前に必ず店舗の最新情報をご確認ください。</strong>掲載内容の誤りにお気づきの場合は<a href="/contact/">お問い合わせ</a>からご連絡ください。</p>
+<h2>評価点について</h2>
+<p>当サイトは独自の点数やランキングをつけていません。他サイトの評価点も転載していません。掲載しているのは「にんにくが売りかどうか」という分類だけです。</p>
+<h2>クレジット</h2>
+<p>日本地図の形状データは Natural Earth（パブリックドメイン）を加工したものです。住所から座標への変換には国土地理院の住所検索APIを利用しています。</p>`,
+    },
+    {
+      slug: 'contact', title: 'お店の情報提供・掲載依頼', desc: 'にんにくマップへの掲載依頼、情報の誤りのご連絡、広告掲載のお問い合わせ。',
+      body: `<h1>お店の情報提供・掲載依頼</h1>
+<h2>こんなお店を探しています</h2>
+<p>にんにくが看板になっている店なら、規模や業態は問いません。とくに掲載が薄い地域（${regions.filter((r) => byRegion(r.id).length === 0).map((r) => r.name).join('・') || 'なし'}）の情報を探しています。</p>
+<h2>ご連絡はこちら</h2>
+<p>次のいずれかをお知らせください。内容を確認のうえ、裏取りができたものを掲載します。</p>
+<ul>
+  <li>掲載してほしいお店（店名・住所・にんにく料理の内容）</li>
+  <li>掲載内容の誤り（閉店・移転・営業時間の変更など）</li>
+  <li>掲載の取り下げ依頼（店舗関係者の方）</li>
+  <li>広告掲載のご相談</li>
+</ul>
+<p><strong>メール：</strong><a href="mailto:${esc(SITE.email)}">${esc(SITE.email)}</a></p>
+<p class="nm-note">お店の関係者の方からの掲載取り下げ依頼は、確認のうえ速やかに対応します。</p>`,
+    },
+    {
+      slug: 'privacy', title: 'プライバシーポリシー', desc: 'にんにくマップにおけるアクセス解析・広告・お問い合わせ情報の取り扱い。',
+      body: `<h1>プライバシーポリシー</h1>
+<h2>アクセス解析</h2>
+<p>当サイトはアクセス状況の把握のためアクセス解析を利用することがあります。取得するのは閲覧ページ・リファラ・おおまかな地域・端末種別といった統計情報で、個人を特定する情報は取得しません。</p>
+<h2>広告について</h2>
+<p>当サイトは広告を掲載することがあります。広告配信事業者がCookie等を用いて広告の最適化を行う場合があります。ブラウザの設定でCookieを無効にできます。</p>
+<h2>外部リンク</h2>
+<p>当サイトは各店舗の公式サイトやグルメサイトへのリンクを含みます。リンク先での個人情報の取り扱いについては、各サイトのポリシーをご確認ください。</p>
+<h2>お問い合わせでいただいた情報</h2>
+<p>お問い合わせでいただいたメールアドレス等は、返信および掲載内容の確認の目的にのみ利用し、第三者へ提供しません。</p>
+<h2>免責</h2>
+<p>掲載情報の正確性には努めていますが、営業時間・定休日・メニュー等は変更される場合があります。当サイトの情報により生じた損害について責任を負いかねます。訪問前に店舗の最新情報をご確認ください。</p>
+<h2>改定</h2>
+<p>本ポリシーは必要に応じて改定します。</p>`,
+    },
+  ];
+  for (const p of pages) {
+    const crumbs = [{ name: 'にんにくマップ', url: '/' }, { name: p.title, url: `/${p.slug}/` }];
+    write(`${p.slug}/index.html`, layout({
+      title: `${p.title}｜にんにくマップ`, desc: p.desc, canonical: `/${p.slug}/`,
+      body: `<main class="nm-doc"><section class="nm-panel">${p.body}</section></main>`,
+      jsonld: [crumbLd(crumbs)], crumbs: crumbTrail(crumbs),
+    }));
+  }
+}
+
+/* ---------------- 7. 404 ---------------- */
+write('404.html', layout({
+  title: 'ページが見つかりません｜にんにくマップ',
+  desc: 'お探しのページは見つかりませんでした。',
+  canonical: '/404.html',
+  body: `<main class="nm-doc"><section class="nm-panel">
+  <h1>ページが見つかりません</h1>
+  <p>お探しのページは移動したか、削除された可能性があります。</p>
+  <div class="nm-tags"><a href="/">地図トップへ</a><a href="/list/">全店一覧へ</a></div>
+</section></main>`,
+}));
+
+/* ---------------- 8. アプリ用データ ---------------- */
+{
+  const appShops = shops.map((s) => ({
+    id: s.id, slug: s.slug, name: s.name, region: s.region, area: s.area, addr: s.addr,
+    hours: s.hours || '要確認', closed_days: s.closed_days || '', genre: s.genre, level: s.level,
+    menu: s.menu, price: s.price || '', review: s.review, lat: s.lat, lon: s.lon,
+    official_url: s.official_url || '', tabelog_url: s.tabelog_url || '', sources: s.sources.slice(0, 2),
+  }));
+  const appRegions = regions.map((r) => ({
+    id: r.id, name: r.name, kana: r.kana, lat: r.lat, lon: r.lon, zoom: r.zoom,
+    blurb: byRegion(r.id).length ? r.blurb : 'ただいま調査中',
+  }));
+  write('data.js', `/* 生成物 — 直接編集しない。data/shops.json を直して npm run build */\nwindow.NM_DATA=${JSON.stringify({ shops: appShops, regions: appRegions })};\n`);
+}
+
+/* ---------------- 9. sitemap / robots / manifest ---------------- */
+{
+  const urls = [
+    { u: '/', p: '1.0' },
+    { u: '/list/', p: '0.8' },
+    ...regions.map((r) => ({ u: `/area/${r.id}/`, p: byRegion(r.id).length ? '0.8' : '0.4' })),
+    ...GENRES.filter((g) => byGenre(g.id).length).map((g) => ({ u: `/genre/${g.id}/`, p: '0.7' })),
+    ...shops.map((s) => ({ u: `/shop/${s.slug}/`, p: '0.7' })),
+    { u: '/about/', p: '0.4' }, { u: '/contact/', p: '0.4' }, { u: '/privacy/', p: '0.2' },
+  ];
+  const today = SITE.lastmod;
+  write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((x) => `  <url><loc>${ORIGIN}${x.u}</loc><lastmod>${today}</lastmod><priority>${x.p}</priority></url>`).join('\n')}
+</urlset>
+`);
+
+  // ⚠️ /data.js /core.js /app.js /styles.css を Disallow にしないこと。
+  //    robots.txt はレンダリング時のサブリソース取得にも効くため、塞ぐと地図が空で評価される。
+  write('robots.txt', `User-agent: *
+Allow: /
+
+Sitemap: ${ORIGIN}/sitemap.xml
+`);
+
+  write('manifest.webmanifest', JSON.stringify({
+    name: SITE.name, short_name: 'にんにくマップ', start_url: '/', display: 'standalone',
+    background_color: '#efe2cd', theme_color: '#efe2cd', lang: 'ja',
+    description: SITE.description,
+    icons: [
+      { src: '/assets/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
+      { src: '/assets/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  }, null, 2));
+
+  write('_headers', `/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+`);
+}
+
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } }
+
+/* ---------------- 集計を表示 ---------------- */
+const counts = regions.map((r) => `${r.name}${byRegion(r.id).length}`).join(' / ');
+console.log(`ビルド完了: 全${shops.length}軒`);
+console.log(`  地域別: ${counts}`);
+console.log(`  ページ: トップ1 + 地域${regions.length} + ジャンル${GENRES.filter((g) => byGenre(g.id).length).length} + 店${shops.length} + 固定4 + 404`);

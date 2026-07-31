@@ -1,0 +1,22 @@
+node_modules/
+tmp/
+.DS_Store
+.wrangler/
+.dev.vars
+*.log
+
+# ビルド生成物（data/ から再生成できる）
+public/index.html
+public/404.html
+public/data.js
+public/sitemap.xml
+public/robots.txt
+public/manifest.webmanifest
+public/_headers
+public/area/
+public/genre/
+public/shop/
+public/list/
+public/about/
+public/contact/
+public/privacy/

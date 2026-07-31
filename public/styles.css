@@ -1,0 +1,144 @@
+/* にんにくマップ — 共通スタイル
+   配色・角丸・影は claude design「案2c-リスト左・広告下」に合わせている */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #efe2cd;
+  background-image: radial-gradient(120% 80% at 50% 0%, #f7ecda 0%, #e9d9c0 60%, #dfcbae 100%);
+  background-attachment: fixed;
+  font-family: 'M PLUS Rounded 1c', system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  color: #4a3a2a;
+  -webkit-font-smoothing: antialiased;
+  /* 和文の可読性: 行長を詰めすぎず、ぶら下がりよりも折り返し制御を優先 */
+  line-break: strict;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+a { color: #d0663c; text-decoration: none; }
+a:hover { color: #a8462a; }
+input, button { font-family: inherit; }
+img { max-width: 100%; }
+
+/* ---- 演出（テンプレートの @keyframes をそのまま） ---- */
+@keyframes gkPart { from { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; } to { transform: translate(var(--gkdx), var(--gkdy)) rotate(var(--gkrot)) scale(.2); opacity: 0; } }
+@keyframes gkShake { 10%,90% { transform: translate(-2px,1px); } 20%,80% { transform: translate(4px,-2px); } 30%,50%,70% { transform: translate(-6px,2px); } 40%,60% { transform: translate(6px,-1px); } }
+@keyframes gkPop { 0% { transform: translateY(46px) scale(.94); opacity: 0; } 62% { transform: translateY(-8px) scale(1.02); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes gkRing { 0% { transform: translate(-50%,-50%) scale(.4); opacity: .9; } 100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0; } }
+@keyframes gkBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes gkTilt { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ---- テンプレートの style-hover を実CSS化 ---- */
+.nm-chip:hover { background: #fff3dc !important; transform: translateY(-1px); }
+.nm-lvchip:hover { background: #ffe7d2 !important; }
+.nm-rpin:hover { filter: brightness(1.06); }
+.nm-pin:hover { filter: brightness(1.07) drop-shadow(0 3px 4px rgba(90,64,36,.35)); }
+.nm-label:hover { background: #fff3dc !important; }
+.nm-legend:hover { background: #fff3dc; border-radius: 8px; }
+.nm-back:hover { transform: translateY(-1px); }
+.nm-listitem:hover { background: #fff3dc !important; transform: translateY(-1px); }
+
+:focus-visible { outline: 3px solid #d0663c; outline-offset: 2px; border-radius: 6px; }
+
+/* お店の詳細カード。デザイン準拠で地図が隠れないよう66%までだが、
+   画面が狭いときは本文が読めないほど窮屈になるので広げる */
+.nm-detail-card { max-height: 66%; }
+@media (max-width: 620px) { .nm-detail-card { max-height: 88%; } }
+
+/* ---- 地図が動かない環境向けのフォールバック ---- */
+#nm-app:empty::after {
+  content: '地図を読み込んでいます…';
+  display: block; padding: 60px 16px; text-align: center; color: #a8906e; font-size: 13px;
+}
+
+/* ============================================================
+   静的コンテンツ（検索エンジンと、JSが動かない環境に出す本文）
+   地図の下に常に存在し、JSは触らない
+   ============================================================ */
+.nm-doc { max-width: 1080px; margin: 0 auto; padding: 8px 16px 64px; }
+.nm-doc section { margin-top: 34px; }
+
+.nm-panel {
+  background: #fffaf0;
+  border: 4px solid #cbb392;
+  border-radius: 26px;
+  padding: 22px 24px;
+  box-shadow: 0 10px 0 #d5bd9c, 0 18px 30px rgba(90,64,36,.18);
+}
+
+.nm-doc h1, .nm-doc h2, .nm-doc h3 {
+  font-family: 'Zen Maru Gothic', 'M PLUS Rounded 1c', sans-serif;
+  font-weight: 900;
+  color: #4a3a2a;
+  line-height: 1.35;
+  margin: 0 0 10px;
+}
+.nm-doc h1 { font-size: clamp(22px, 3.4vw, 30px); }
+.nm-doc h2 { font-size: clamp(18px, 2.6vw, 23px); display: flex; align-items: center; gap: 9px; }
+.nm-doc h2 img { width: 24px; height: 24.8px; flex: none; }
+.nm-doc h3 { font-size: 16px; margin-top: 22px; }
+.nm-doc p { font-size: 14px; line-height: 2; color: #6b5540; margin: 0 0 12px; }
+.nm-doc ul { font-size: 14px; line-height: 2; color: #6b5540; padding-left: 1.3em; margin: 0 0 12px; }
+
+.nm-lede { font-size: 14.5px; line-height: 2.05; }
+
+/* 店カード（静的リスト） */
+.nm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 12px; margin-top: 14px; }
+.nm-card {
+  background: #fffdf7; border: 2px solid #eadcc2; border-radius: 18px;
+  padding: 13px 15px; box-shadow: 0 3px 0 #eadcc2;
+}
+.nm-card h3 { font-size: 15px; margin: 0 0 4px; }
+.nm-card h3 a { color: #4a3a2a; }
+.nm-card h3 a:hover { color: #d0663c; }
+.nm-card .nm-area { font-size: 11.5px; color: #a8906e; }
+.nm-card .nm-menu { font-size: 12.5px; color: #8a7358; margin-top: 6px; line-height: 1.7; }
+.nm-card dl { margin: 9px 0 0; font-size: 12px; line-height: 1.85; color: #6b5540; }
+.nm-card dt { color: #a8906e; font-size: 11px; }
+.nm-card dd { margin: 0 0 5px; }
+
+.nm-badge {
+  display: inline-block; background: #d0663c; color: #fff6e6;
+  border-radius: 999px; padding: 2px 9px; font-size: 10.5px; font-weight: 800;
+  vertical-align: 2px; margin-right: 6px;
+}
+.nm-badge.lv2 { background: #e08a4a; }
+.nm-badge.lv1 { background: #b59468; }
+
+.nm-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.nm-tags a {
+  border: 2px solid #d8c3a2; background: #fffaf0; color: #7a6448;
+  font-size: 12px; font-weight: 800; padding: 6px 13px; border-radius: 999px;
+  box-shadow: 0 3px 0 #ddc7a6;
+}
+.nm-tags a:hover { background: #fff3dc; }
+
+.nm-crumbs { font-size: 11.5px; color: #a8906e; padding: 14px 16px 0; max-width: 1080px; margin: 0 auto; }
+.nm-crumbs a { color: #a8906e; }
+.nm-crumbs a:hover { color: #d0663c; }
+
+/* 表（詳細ページ） */
+.nm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.9; margin-top: 6px; }
+.nm-table th, .nm-table td { text-align: left; padding: 9px 10px; border-bottom: 2px dashed #e4d3b6; vertical-align: top; }
+.nm-table th { width: 7.5em; color: #a8906e; font-weight: 800; white-space: nowrap; }
+
+.nm-note { font-size: 12px; color: #a8906e; line-height: 1.9; }
+
+footer.nm-foot {
+  max-width: 1080px; margin: 0 auto; padding: 26px 16px 44px;
+  font-size: 12px; color: #a8906e; line-height: 2;
+  border-top: 2px dashed #d9c4a4;
+}
+footer.nm-foot nav { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; }
+
+@media (max-width: 560px) {
+  .nm-panel { padding: 18px 15px; border-radius: 20px; }
+  .nm-table th { width: auto; display: block; border-bottom: 0; padding-bottom: 0; }
+  .nm-table td { display: block; padding-top: 2px; }
+}
