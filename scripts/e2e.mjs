@@ -1,11 +1,14 @@
 /* 実ブラウザでの動作確認（地図の描画・操作・レイアウト崩れ・コンソールエラー）
    使い方: node scripts/serve.mjs & node scripts/e2e.mjs [port]
+   本番に当てる: node scripts/e2e.mjs https://ninnikumap.com
+     ⚠️ `_headers` の CSP はローカルの serve.mjs では効かない＝本番でしか検証できない。
+        フォント等が CSP で落ちていないかは、必ず一度は本番URLに当てて確かめること。
    スクショは tmp/shots/ に出る（gitには入れない） */
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PORT = Number(process.argv[2] || 8799);
-const BASE = `http://127.0.0.1:${PORT}`;
+const ARG = process.argv[2] || '8799';
+const BASE = /^https?:\/\//.test(ARG) ? ARG.replace(/\/$/, '') : `http://127.0.0.1:${Number(ARG)}`;
 const SHOTS = path.join(process.cwd(), 'tmp', 'shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 

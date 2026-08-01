@@ -556,12 +556,22 @@ Sitemap: ${ORIGIN}/sitemap.xml
     ],
   }, null, 2));
 
+  /* ⚠️ Cloudflare Web Analytics を有効にすると、Pages が配信時に
+     https://static.cloudflareinsights.com/beacon.min.js を勝手に注入する。
+     script-src に許可が無いと CSP で丸ごとブロックされ、解析が1件も取れないまま
+     「有効になっている」ように見える（2026-08-02 に本番の実ブラウザ検証で発見）。
+     ビーコンは https://cloudflareinsights.com/cdn-cgi/rum へ送るので connect-src も要る。
+     この CSP はローカルの serve.mjs では効かない＝本番URLに当てないと検証できない:
+       node scripts/e2e.mjs https://ninnikumap.com */
+  const CFI_SCRIPT = 'https://static.cloudflareinsights.com';
+  const CFI_CONNECT = 'https://cloudflareinsights.com';
+
   write('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ${CFI_CONNECT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
