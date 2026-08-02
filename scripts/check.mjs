@@ -9,6 +9,7 @@
 */
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const ROOT = process.cwd();
 const PUB = path.join(ROOT, 'public');
@@ -134,6 +135,48 @@ for (const f of htmls) {
     if (re.test(robots)) fail(`robots.txt が ${asset} を塞いでいる（レンダリング時のサブリソース取得も止まる）`);
   }
   if (!/Sitemap:/i.test(robots)) fail('robots.txt に Sitemap: が無い');
+  for (const asset of ['/affiliate.js', '/affiliate-config.js']) {
+    const re = new RegExp('^\\s*Disallow:\\s*' + asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'mi');
+    if (re.test(robots)) fail(`robots.txt が ${asset} を塞いでいる`);
+  }
+}
+
+/* ---- 7: 広告表示（景表法5条3号・ステマ規制）----
+   ①全ページに開示が出ているか ②収益化の状態と文面が一致しているか
+   ③装飾されたリンクに rel="sponsored" が付いているか ④設定に秘密が混ざっていないか */
+{
+  if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+  await import(pathToFileURL(path.join(PUB, 'affiliate-config.js')).href);
+  await import(pathToFileURL(path.join(PUB, 'affiliate.js')).href);
+  const AFF = globalThis.NM_AFF;
+  const cfg = AFF.loadConfig();
+  const monetized = AFF.hasAnyAffiliate(cfg);
+
+  for (const f of htmls) {
+    const rel = relOf(f);
+    const html = fs.readFileSync(f, 'utf8');
+    if (!/id="ad-disclosure"/.test(html)) fail(`${rel}: 広告表示（#ad-disclosure）が無い`);
+    /* 文面と実態がずれると、それ自体が優良誤認になりうるので機械で縛る */
+    const claimsAds = /広告（アフィリエイトリンク）が含まれます/.test(html);
+    if (monetized && !claimsAds) fail(`${rel}: 収益化オンなのに「広告が含まれます」の開示が無い`);
+    if (!monetized && claimsAds) fail(`${rel}: 収益化オフなのに「広告が含まれます」と書いている（事実と違う）`);
+
+    /* アフィリエイト事業者のドメインへ出すリンクには必ず sponsored を付ける */
+    for (const m of html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi)) {
+      const host = (() => { try { return new URL(m[1]).hostname; } catch { return ''; } })();
+      const isAffHost = /(^|\.)(hb\.afl\.rakuten\.co\.jp|ck\.jp\.ap\.valuecommerce\.com)$/.test(host);
+      if (isAffHost && !/rel="[^"]*\bsponsored\b/.test(m[0])) {
+        fail(`${rel}: アフィリンクに rel="sponsored" が無い → ${m[1].slice(0, 60)}`);
+      }
+    }
+  }
+
+  /* 公開される設定ファイルに秘密が混ざっていないか（ブラウザに配信されるので致命的） */
+  const cfgSrc = fs.readFileSync(path.join(PUB, 'affiliate-config.js'), 'utf8');
+  for (const pat of [/secret/i, /api[_-]?key/i, /password/i, /BEGIN [A-Z ]*PRIVATE KEY/, /\bsk-[A-Za-z0-9]{16}/]) {
+    if (pat.test(cfgSrc)) fail(`affiliate-config.js に秘密らしき文字列がある（${pat}）— このファイルはブラウザに配信される`);
+  }
+  console.log(`  広告: ${monetized ? '収益化オン' : '収益化オフ（全リンク素通し）'}`);
 }
 
 /* ---- 結果 ---- */

@@ -190,13 +190,27 @@
      min-width:0 では止まらないので max-width:100% で必ず頭を抑えること。
      元デザインはルートの overflow:hidden に隠れていただけで、はみ出し自体は起きていた。 */
   var ADS = window.NM_ADS || {};
+
+  /* アフィリエイト装飾層。読み込みに失敗しても「素通し」で動くフォールバックを持たせる
+     ＝収益化の配線が落ちてもサイト自体は壊れない（リンクは無報酬の素リンクとして機能する）。 */
+  var AFF = window.NM_AFF || {
+    decorate: function (svc, url) { return url; },
+    isAffiliated: function () { return false; },
+    relFor: function () { return 'nofollow noopener'; },
+    hasAnyAffiliate: function () { return false; },
+  };
+
   function adSlot(sizeLabel, boxCss, key) {
     boxCss = 'min-width:0;max-width:100%;' + boxCss;
     var ad = ADS[key];
     if (ad && ad.html) {
-      var box = h('div', { css: boxCss + 'overflow:hidden;' });
+      /* 実広告を出すときは「広告」と分かる表示を必ず添える（景表法5条3号・ステマ規制）。 */
+      var box = h('div', { css: boxCss + 'overflow:hidden;position:relative;' });
       box.p.__html = ad.html;
-      return box;
+      return h('div', { css: 'position:relative;min-width:0;max-width:100%;' },
+        box,
+        h('span', { cls: 'nm-ad-mark', css: 'position:absolute;top:2px;left:2px;' }, '広告')
+      );
     }
     return h('a', {
       attrs: { href: (ADS.inquiryUrl || './contact/'), rel: 'nofollow' },
@@ -549,9 +563,12 @@
     /* ---- お店の詳細カード ---- */
     function shopCard(v) {
       var s = v.selected;
+      /* 外部送客は必ず AFF.decorate() を通す（単一チョークポイント）。
+         未提携なら素通し＝素のリンクとして出る。装飾された場合だけ rel="sponsored" と「広告」表示が付く
+         （景表法5条3号・ステマ規制）。 */
       var links = [];
-      if (s.tabelog_url) links.push({ href: s.tabelog_url, label: '食べログで見る' });
-      else if (s.official_url) links.push({ href: s.official_url, label: '公式サイト' });
+      if (s.tabelog_url) links.push({ svc: 'tabelog', href: s.tabelog_url, label: '食べログで見る' });
+      else if (s.official_url) links.push({ svc: 'official', href: s.official_url, label: '公式サイト' });
 
       return h('div', {
         key: 'detail',
@@ -584,7 +601,12 @@
             h('div', { css: 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;' },
               h('a', { attrs: { href: s.mapUrl, target: '_blank', rel: 'noopener' }, css: 'background:#d0663c;color:#fff6e6;border-radius:999px;padding:9px 16px;font-size:12px;font-weight:800;box-shadow:0 4px 0 #a8462a;text-decoration:none;' }, '地図アプリでひらく'),
               links.map(function (l, i) {
-                return h('a', { key: 'ln' + i, attrs: { href: l.href, target: '_blank', rel: 'noopener nofollow' }, css: 'border:2px solid #cbb392;background:#fffaf0;color:#7a6448;font-size:12px;font-weight:800;padding:9px 16px;border-radius:999px;box-shadow:0 4px 0 #ddc7a6;text-decoration:none;' }, l.label);
+                var sponsored = AFF.isAffiliated(l.svc);
+                return h('a', {
+                  key: 'ln' + i,
+                  attrs: { href: AFF.decorate(l.svc, l.href), target: '_blank', rel: AFF.relFor(l.svc) },
+                  css: 'border:2px solid #cbb392;background:#fffaf0;color:#7a6448;font-size:12px;font-weight:800;padding:9px 16px;border-radius:999px;box-shadow:0 4px 0 #ddc7a6;text-decoration:none;'
+                }, l.label + (sponsored ? '［広告］' : ''));
               }),
               h('button', { onClick: v.onClose, attrs: { type: 'button' }, css: 'border:0;background:transparent;color:#a8906e;font-family:inherit;font-size:12px;padding:9px 6px;cursor:pointer;' }, 'とじる')
             )

@@ -16,6 +16,7 @@
 */
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const ROOT = process.cwd();
 const PUB = path.join(ROOT, 'public');
@@ -25,6 +26,23 @@ if (!fs.existsSync(path.join(PUB, 'app.js'))) {
   console.error(`public/app.js が見つからない。cwd=${ROOT} がプロジェクト直下か確認すること。`);
   process.exit(1);
 }
+
+/* アフィリエイト装飾層を「ブラウザと同じ1本のファイル」から読む。
+   public/affiliate.js は import/export を持たないIIFEなので、ESMとしてそのまま実行でき、
+   globalThis.NM_AFF に生える。＝静的ページ（ここ）とアプリ（app.js）で実装が絶対に食い違わない。
+
+   affiliate-config.js は素直に `window.NM_AFFILIATE = {...}` と書けるようにしておきたい
+   （代表が編集するファイルなので、環境判定の呪文を混ぜたくない）。Node には window が無いので
+   ここで受け皿を作る。globalThis を指すので、affiliate.js 側の環境判定も同じ器を見る。 */
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+for (const f of ['affiliate-config.js', 'affiliate.js']) {
+  const p = path.join(PUB, f);
+  if (!fs.existsSync(p)) { console.error(`public/${f} が見つからない。`); process.exit(1); }
+  await import(pathToFileURL(p).href);
+}
+const AFF = globalThis.NM_AFF;
+const AFF_CFG = AFF.loadConfig();
+const MONETIZED = AFF.hasAnyAffiliate(AFF_CFG);
 
 const SITE = JSON.parse(fs.readFileSync(path.join(DATA, 'site.json'), 'utf8'));
 const ORIGIN = SITE.origin.replace(/\/$/, '');
@@ -112,6 +130,16 @@ function write(rel, content) {
 }
 
 /* ---------------- 共通レイアウト ---------------- */
+/* 広告表示（景表法5条3号・ステマ規制 2023-10-01施行）。
+   「広告なのに広告と分からない」状態を作らないための開示。全ページのフッターに常時出す。
+   ⚠️ 収益化オン/オフで文面を変える。オフのときに「広告が含まれます」と書くのは事実に反するし、
+      オンのときに黙っているのは規制に触れる。affiliate-config.js の中身だけで自動的に切り替わる。
+   ⚠️ 2文目（編集方針）は事実に基づく: 掲載店は一次情報での裏取りで選んでおり、
+      落とした店は data/excluded.json に理由ごと残している。店舗から金銭を受け取っての掲載はしていない。 */
+const AD_DISCLOSURE = MONETIZED
+  ? `<div id="ad-disclosure" class="nm-ad-disclosure"><strong>広告について</strong>：当サイトには広告（アフィリエイトリンク）が含まれます。リンク経由でのご予約・ご購入により、当サイトが報酬を受け取ることがあります。<strong>掲載するお店の選定・記載内容は、報酬の有無や店舗からの依頼と無関係に決めています。</strong></div>`
+  : `<div id="ad-disclosure" class="nm-ad-disclosure"><strong>広告について</strong>：現在、当サイトに広告は掲載していません。<strong>掲載するお店の選定・記載内容は、報酬の有無や店舗からの依頼と無関係に決めています。</strong></div>`;
+
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;800&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">`;
 
 function layout({ title, desc, canonical, body, jsonld = [], appShell = false, crumbs = null }) {
@@ -156,8 +184,9 @@ ${body}
   </nav>
   <div>${esc(SITE.name)}｜掲載情報は各店舗の公式サイト・大手グルメサイト等の公開情報をもとにしています。訪問前に必ず店舗の最新情報をご確認ください。</div>
   <div>地図の形状データ: Natural Earth（パブリックドメイン）／住所の座標: 国土地理院 地理院地図Vector提供の住所検索API</div>
+  ${AD_DISCLOSURE}
 </footer>
-${appShell ? '<script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
+${appShell ? '<script src="/affiliate-config.js"></script><script src="/affiliate.js"></script><script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
 </body>
 </html>
 `;
@@ -365,6 +394,10 @@ for (const s of shops) {
     ['にんにく度', `<span class="nm-badge lv${s.level}">${esc(LEVELS[s.level].label)}</span>${esc(LEVELS[s.level].desc)}`],
     ['看板メニュー', esc(s.menu) + (s.price ? `（${esc(s.price)}）` : '')],
     s.official_url ? ['公式サイト', `<a href="${esc(s.official_url)}" rel="nofollow noopener" target="_blank">${esc(s.official_url)}</a>`] : null,
+    /* 食べログは掲載45軒中23軒にあり、写真・営業時間の確認先として実用性が高い。
+       同時に本サイト唯一のまとまった送客面でもあるので decorate() を通す。
+       ⚠️ 提携前（config が空）は装飾されず rel も sponsored にならない＝素の外部リンクとして出る。 */
+    s.tabelog_url ? ['食べログ', `<a href="${esc(AFF.decorate('tabelog', s.tabelog_url, AFF_CFG))}" rel="${AFF.relFor('tabelog', AFF_CFG)}" target="_blank">写真・口コミを見る</a>${AFF.isAffiliated('tabelog', AFF_CFG) ? '<span class="nm-ad-mark">広告</span>' : ''}`] : null,
   ].filter(Boolean);
 
   const body = `<main class="nm-doc">
@@ -472,8 +505,10 @@ ${[3, 2, 1].map((n) => `<li><strong>${esc(LEVELS[n].label)}</strong>：${esc(LEV
       body: `<h1>プライバシーポリシー</h1>
 <h2>アクセス解析</h2>
 <p>当サイトはアクセス状況の把握のためアクセス解析を利用することがあります。取得するのは閲覧ページ・リファラ・おおまかな地域・端末種別といった統計情報で、個人を特定する情報は取得しません。</p>
-<h2>広告について</h2>
+<h2>広告・アフィリエイトについて</h2>
 <p>当サイトは広告を掲載することがあります。広告配信事業者がCookie等を用いて広告の最適化を行う場合があります。ブラウザの設定でCookieを無効にできます。</p>
+<p>また、当サイトはアフィリエイトプログラムを利用することがあります。この場合、当サイトのリンクを経由してご予約・ご購入いただくと、当サイトが広告主から報酬を受け取ることがあります。報酬が発生するリンクには「広告」と表示し、リンクに <code>rel="sponsored"</code> を付与しています。</p>
+<p><strong>掲載するお店の選定および記載内容は、報酬の有無や店舗からの依頼と無関係に決めています。</strong>掲載は編集上の判断のみで行っており、掲載料を受け取って店舗を掲載することはありません。掲載を見送った店舗については、その理由を記録しています。</p>
 <h2>外部リンク</h2>
 <p>当サイトは各店舗の公式サイトやグルメサイトへのリンクを含みます。リンク先での個人情報の取り扱いについては、各サイトのポリシーをご確認ください。</p>
 <h2>お問い合わせでいただいた情報</h2>

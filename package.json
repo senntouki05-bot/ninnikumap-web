@@ -9,7 +9,8 @@
     "build": "node scripts/build.mjs",
     "check": "node scripts/check.mjs",
     "dev": "node scripts/serve.mjs",
-    "verify": "npm run build && npm run check",
-    "deploy": "npm run verify && wrangler pages deploy public --project-name=ninniku-map --branch=main --commit-dirty=true"
+    "verify": "npm run build && npm run test && npm run check",
+    "deploy": "npm run verify && wrangler pages deploy public --project-name=ninniku-map --branch=main --commit-dirty=true",
+    "test": "node scripts/test-affiliate.mjs"
   }
 }
