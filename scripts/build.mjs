@@ -603,12 +603,19 @@ Sitemap: ${ORIGIN}/sitemap.xml
   const CFI_SCRIPT = 'https://static.cloudflareinsights.com';
   const CFI_CONNECT = 'https://cloudflareinsights.com';
 
+  /* 自社のアクセス解析（cookieless）の送信先。qa.js 自体は同一オリジン配信なので
+     script-src は要らず、connect-src だけ通す。
+     ⚠️ この _headers はビルドの生成物。quirio-analytics の `npm run sync` が
+     public/_headers に当てたパッチは次のビルドで消える（2026-08-04 に本番で発生）。
+     許可はここに書くこと。 */
+  const QA_ENDPOINT = 'https://quirio-analytics.wataru-okada.workers.dev';
+
   write('_headers', `/*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ${CFI_CONNECT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ${CFI_CONNECT} ${QA_ENDPOINT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
