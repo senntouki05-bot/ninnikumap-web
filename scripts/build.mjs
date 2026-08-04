@@ -187,6 +187,8 @@ ${body}
   ${AD_DISCLOSURE}
 </footer>
 ${appShell ? '<script src="/affiliate-config.js"></script><script src="/affiliate.js"></script><script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
+<!-- アクセス解析（自社・cookieless）。正本=~/dev/quirio-analytics、配布は npm run sync -->
+<script defer src="/qa.js"></script>
 </body>
 </html>
 `;
