@@ -142,7 +142,7 @@ const AD_DISCLOSURE = MONETIZED
 
 const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;800&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">`;
 
-function layout({ title, desc, canonical, body, jsonld = [], appShell = false, crumbs = null }) {
+function layout({ title, desc, canonical, body, jsonld = [], appShell = false, crumbs = null, is404 = false }) {
   const url = ORIGIN + canonical;
   const ld = jsonld.length
     ? jsonld.map((o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join('')
@@ -188,7 +188,7 @@ ${body}
 </footer>
 ${appShell ? '<script src="/affiliate-config.js"></script><script src="/affiliate.js"></script><script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
 <!-- アクセス解析（自社・cookieless）。正本=~/dev/quirio-analytics、配布は npm run sync -->
-<script defer src="/qa.js"></script>
+<script defer src="/qa.js"${is404 ? ' data-qa-404' : ''}></script>
 </body>
 </html>
 `;
@@ -544,6 +544,10 @@ write('404.html', layout({
   title: 'ページが見つかりません｜にんにくマップ',
   desc: 'お探しのページは見つかりませんでした。',
   canonical: '/404.html',
+  // ⚠️ Cloudflare Pages の 404 は URL を保ったまま返るのでパスでは判別できない。
+  //    この印が無いと、存在しないURLが「見つかった」として計測され、
+  //    壊れたリンクの集計が永久に0件になる（= 壊れていないように読める）。
+  is404: true,
   body: `<main class="nm-doc"><section class="nm-panel">
   <h1>ページが見つかりません</h1>
   <p>お探しのページは移動したか、削除された可能性があります。</p>
