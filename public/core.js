@@ -231,19 +231,9 @@
           return { ox: o.ox + (bx * cz + by * sz) / s, oy: o.oy + (-bx * sz + by * cz) / s };
         });
       },
-      /* ラベルの実寸を測って、矩形で衝突回避＋画面内に収める */
-      labelBox: function (name) {
-        api._lb = api._lb || {};
-        if (api._lb[name]) return api._lb[name];
-        if (!api._ctx) { var c = document.createElement('canvas'); api._ctx = c.getContext('2d'); }
-        api._ctx.font = '800 10px "M PLUS Rounded 1c", system-ui, sans-serif';
-        var w = api._ctx.measureText(name).width;
-        var maxW = 114, lines = Math.max(1, Math.min(3, Math.ceil(w / maxW)));
-        var box = { w: Math.min(w, maxW) + 20, h: lines * 14 + 10 };
-        api._lb[name] = box;
-        return box;
-      },
-      /* ピンは実位置のまま、店名パネルを画面平面で押し分けて全部読めるようにする */
+      /* ピンの立っている板上の座標を、画面平面のピクセル位置に落とす（当たり判定の置き場所に使う）
+         ※ 以前はここで店名パネルの実寸を測って衝突回避もしていたが、
+            地図上に店名を出さない方針にしたので座標だけを返す */
       projPins: function (items, b, st) {
         var sw = st.sw || 760, sh = st.sh || 500, s = b.scale;
         var rr = rz * Math.PI / 180, cz = Math.cos(rr), sz = Math.sin(rr);
@@ -252,75 +242,8 @@
           var vx = s * (it.x - b.fx), vy = s * (it.y - b.fy);
           var ax = vx * cz - vy * sz, ay = vx * sz + vy * cz;
           var pf = 1200 / (1200 + ay * sxt);
-          var m = api.labelBox(it.name);
-          return { px: sw / 2 + ax * pf, py: sh / 2 + ay * cxt * pf, w: m.w, h: m.h, name: it.name };
+          return { px: sw / 2 + ax * pf, py: sh / 2 + ay * cxt * pf };
         });
-      },
-      /* 左右の端に整列して引き出す（密集エリアでも絶対に重ならない） */
-      labelColumns: function (L, st) {
-        var sw = st.sw || 760, sh = st.sh || 500;
-        var byX = L.slice().sort(function (a, b2) { return a.px - b2.px; });
-        var half = Math.ceil(byX.length / 2);
-        var byPy = function (a, b2) { return a.py - b2.py; };
-        var left = byX.slice(0, half).sort(byPy), right = byX.slice(half).sort(byPy);
-        var lay = function (arr, side) {
-          if (!arr.length) return;
-          var bot = side < 0 ? 56 : 16;
-          var avail = sh - 54 - bot;
-          var sum = arr.reduce(function (t, q) { return t + q.h; }, 0);
-          var gap = arr.length > 1 ? Math.max(2, Math.min(7, (avail - sum) / (arr.length - 1))) : 0;
-          var hh = sum + gap * (arr.length - 1);
-          var top = Math.max(54, Math.min(54 + (avail - hh) / 2, sh - bot - hh));
-          var mw = Math.max.apply(null, arr.map(function (q) { return q.w; }));
-          arr.forEach(function (q) {
-            q.y = Math.round((top + q.h / 2) * 10) / 10;
-            q.x = Math.round((side < 0 ? mw / 2 + 12 : sw - mw / 2 - 12) * 10) / 10;
-            top += q.h + gap;
-          });
-        };
-        lay(left, -1); lay(right, 1);
-        return L;
-      },
-      labelLayout: function (items, b, st) {
-        var sw = st.sw || 760, sh = st.sh || 500;
-        var L = api.projPins(items, b, st);
-        var pinBox = L.map(function (q) { q.x = q.px; q.y = q.py - 74; return { x: q.px, y: q.py - 18, w: 44, h: 58 }; });
-        var ovl = function (ax, ay, aw, ah, bx, by, bw, bh) {
-          var ox = Math.min(ax + aw / 2, bx + bw / 2) - Math.max(ax - aw / 2, bx - bw / 2);
-          var oy = Math.min(ay + ah / 2, by + bh / 2) - Math.max(ay - ah / 2, by - bh / 2);
-          return ox > 0 && oy > 0 ? ox * oy : 0;
-        };
-        /* 候補位置：真上から扇状に広げていき、空いてる一番近い場所に置く */
-        var cands = [];
-        for (var ring = 0; ring < 8; ring++) {
-          var R = 62 + ring * 24;
-          for (var ai = 0; ai < 21; ai++) {
-            var step = Math.ceil(ai / 2) * 18 * (ai % 2 ? 1 : -1);
-            cands.push({ r: R, a: -90 + step });
-          }
-        }
-        var placed = [];
-        L.slice().sort(function (m, n) { return m.py - n.py; }).forEach(function (q) {
-          var best = null, bestScore = 1e18;
-          for (var i = 0; i < cands.length; i++) {
-            var c = cands[i], rad = c.a * Math.PI / 180;
-            var x = q.px + Math.cos(rad) * c.r, y = q.py - 14 + Math.sin(rad) * c.r;
-            var hw = q.w / 2 + 6, hh = q.h / 2 + 6;
-            if (x < hw || x > sw - hw || y < hh + 48 || y > sh - hh) continue;
-            if (y + q.h / 2 > sh - 52 && x - q.w / 2 < 336) continue;
-            var ov = 0, j;
-            for (j = 0; j < placed.length; j++) ov += ovl(x, y, q.w + 8, q.h + 8, placed[j].x, placed[j].y, placed[j].w, placed[j].h);
-            for (j = 0; j < pinBox.length; j++) ov += ovl(x, y, q.w + 4, q.h + 4, pinBox[j].x, pinBox[j].y, pinBox[j].w, pinBox[j].h) * 0.55;
-            var score = ov * 1000 + c.r + Math.abs(c.a + 90) * 0.6;
-            if (score < bestScore) { bestScore = score; best = { x: x, y: y }; }
-            if (ov === 0) break;
-          }
-          if (!best) best = { x: Math.max(q.w / 2 + 6, Math.min(sw - q.w / 2 - 6, q.px)), y: Math.max(q.h / 2 + 54, q.py - 74) };
-          q.x = Math.round(best.x * 10) / 10;
-          q.y = Math.round(best.y * 10) / 10;
-          placed.push({ x: q.x, y: q.y, w: q.w + 8, h: q.h + 8 });
-        });
-        return L;
       },
       spread: function (items, s, minD) {
         var p = items.map(function (i) { return { x: i.x * s, y: i.y * s, ox: 0, oy: 0 }; });
@@ -409,7 +332,7 @@
             shape: opt.partShape, dist: 54, life: 850, size: opt.partSize || 9
           });
         }
-        cmp.setState({ pending: id, combo: c });
+        cmp.setState({ pending: id });
         setTimeout(function () {
           if (cmp.state.pending !== id) return;
           sfx('open', { wave: wave });
@@ -426,7 +349,7 @@
         var inView = st.view === 'japan' ? [] : matched.filter(function (s) { return s.region === st.region; });
         var off = api.spread(inView, b.scale, opt.minGap || 62);
         off = api.clampToView(inView, off, b, st, { x: 40, t: 60, b: 40 });
-        var lsrc = inView.map(function (sp, i) { return { x: sp.x + off[i].ox, y: sp.y + off[i].oy, name: sp.name }; });
+        var lsrc = inView.map(function (sp, i) { return { x: sp.x + off[i].ox, y: sp.y + off[i].oy }; });
         var pxy = api.projPins(lsrc, b, st);
         var pins = inView.map(function (s, i) {
           var en = api.entry(i, st), o = off[i];
@@ -448,31 +371,10 @@
             onTap: function (ev) { api.tapShop(s.id, ev); }
           });
         });
-        var lmode = cmp.state.lmode || opt.labelMode || 'callout';
-        var lraw = lmode === 'columns' ? api.labelColumns(api.projPins(lsrc, b, st), st)
-          : lmode === 'callout' ? api.labelLayout(lsrc, b, st)
-            : api.projPins(lsrc, b, st);
-        var labels = lraw.map(function (l, i) {
-          var ax = l.px, ay = l.py - 44;
-          var lx = l.x == null ? ax : l.x, ly = (l.y == null ? ay : l.y) + l.h / 2 - 2;
-          var dx = ax - lx, dy = ay - ly;
-          return {
-            id: inView[i].id, name: l.name, num: i + 1,
-            x: Math.round(lx * 10) / 10, y: Math.round((l.y == null ? ay : l.y) * 10) / 10,
-            px: Math.round(l.px * 10) / 10, py: Math.round((l.py - 26) * 10) / 10,
-            lx: Math.round(lx * 10) / 10, ly: Math.round(ly * 10) / 10,
-            len: Math.round(Math.sqrt(dx * dx + dy * dy)), ang: Math.round(Math.atan2(dy, dx) * 180 / Math.PI * 10) / 10,
-            op: pins[i].op, active: pins[i].active, onTap: pins[i].onTap
-          };
-        });
-        var legend = labels.map(function (l, i) {
-          return { id: l.id, num: l.num, name: l.name, area: inView[i].area, stars: pins[i].starsOn, active: pins[i].active, onTap: pins[i].onTap };
-        });
-        if (lmode === 'bare') labels = labels.filter(function (l) { return l.active; });
         pins.sort(function (m, n) { return m.pinY - n.pinY; });
         var roff = api.spread(REGIONS, b.scale, opt.minGapRegion || 74);
         roff = api.clampToView(REGIONS, roff, b, st, { x: 72, t: 58, b: 32 });
-        var rxy = api.projPins(REGIONS.map(function (rg, i) { return { x: rg.x + roff[i].ox, y: rg.y + roff[i].oy, name: rg.name }; }), b, st);
+        var rxy = api.projPins(REGIONS.map(function (rg, i) { return { x: rg.x + roff[i].ox, y: rg.y + roff[i].oy }; }), b, st);
         var regionPins = REGIONS.map(function (rg, i) {
           var cnt = matched.filter(function (s) { return s.region === rg.id; }).length;
           var en = api.entry(i, st), o = roff[i];
@@ -504,6 +406,15 @@
             }
           });
         });
+        /* ニンニクレベル表示：タップした店の「にんにく度」を出す。
+           押した瞬間（pending）から出したいので、確定した shop より pending を優先して拾う */
+        var lvId = st.pending || st.shop, lvShop = null;
+        if (lvId) SHOPS.forEach(function (s) { if (s.id === lvId) lvShop = s; });
+        var levelBadge = lvShop ? {
+          id: lvShop.id, n: lvShop.level, label: LEVELS[lvShop.level].label,
+          marks: [1, 2, 3].filter(function (n) { return n <= lvShop.level; })
+        } : null;
+
         var sel = null;
         SHOPS.forEach(function (s) { if (s.id === st.shop) sel = s; });
         if (sel) {
@@ -517,10 +428,6 @@
         }
         return {
           geoPaths: PATHS, geoPathsSmooth: PATHS_SMOOTH, regions: REGIONS, boardTf: b.tf, boardScale: b.scale,
-          labels: labels, legend: legend,
-          isCallout: lmode === 'callout', isColumns: lmode === 'columns',
-          isNumbered: lmode === 'numbered', isBare: lmode === 'bare',
-          hasLabels: lmode !== 'numbered',
           strokeW: Math.round((1.7 / b.scale) * 1000) / 1000,
           svgW: 600 * b.scale, svgH: 900 * b.scale,
           exTf1: 'translate(0,' + (7 / b.scale) + ')', exTf2: 'translate(0,' + (14 / b.scale) + ')',
@@ -535,7 +442,8 @@
           levelChips: [3, 2, 1].map(function (n) {
             return { id: 'lv' + n, label: LEVELS[n].label, stars: '★★★'.slice(0, n), active: st.filter === ('lv' + n), onTap: function () { api.setFilter('lv' + n); } };
           }),
-          q: st.q || '', onSearch: api.setQ, combo: st.combo || 0, comboOn: (st.combo || 0) > 1,
+          q: st.q || '', onSearch: api.setQ,
+          levelBadge: levelBadge, hasLevelBadge: !!levelBadge,
           listItems: listItems, listCount: listItems.length,
           blocks: api.blocks(st, b),
           onBack: api.goJapan, onClose: api.closeShop, stageRef: api.setStage,
