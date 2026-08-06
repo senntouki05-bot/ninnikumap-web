@@ -222,14 +222,14 @@
   function App() {
     var cmp = new Component({
       view: 'japan', region: null, shop: null, pending: null, filter: 'all', q: '',
-      counter: 0, parts: [], combo: 0, enter: 1, landed: false, lmode: 'callout',
+      counter: 0, parts: [], enter: 1, landed: false,
       tilt: 27, hold: 420
     });
 
     var ctl = window.GK.controller(cmp, {
       tilt: 27, rz: -8, lift: 24,
       hold: 420, wave: 'triangle',
-      minGap: 62, minGapRegion: 88, labelMode: 'callout',
+      minGap: 62, minGapRegion: 88,
       partColors: ['#fff6e0', '#f3d08a', '#e8a35f', '#c3dcab'],
       blockColors: ['#fdf6e6', '#f0e2c6', '#e6d3b0'], landDelay: 540
     });
@@ -402,6 +402,8 @@
         })
       ) : null;
 
+      /* 地図の上に出すのはにんにくのマークだけ。店名は左のお店リストと詳細カードで読ませる
+         （店名パネルを地図に載せると密集地域で地図そのものが読めなくなるため） */
       var hitRegion = v.isRegion ? h('div', { key: 'hitRegion', css: 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;' },
         h('div', {}, v.pins.map(function (p) {
           return h('button', {
@@ -410,61 +412,15 @@
             css: 'position:absolute;transform:translate(-50%,-100%);width:46px;height:50px;border-radius:24px;pointer-events:auto;cursor:pointer;background:transparent;border:0;padding:0;',
             style: { left: p.sx + 'px', top: p.sy + 'px' }
           });
-        })),
-        v.hasLabels ? h('div', { key: 'labels', css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
-          h('div', {}, v.labels.map(function (l) {
-            return h('div', {
-              key: 'lc' + l.id,
-              css: 'position:absolute;left:0;top:0;transform-origin:0 0;height:2px;background:rgba(110,86,54,.55);border-radius:1px;',
-              style: { transform: 'translate(' + l.lx + 'px,' + l.ly + 'px) rotate(' + l.ang + 'deg)', width: l.len + 'px', opacity: l.op }
-            });
-          })),
-          h('div', {}, v.labels.map(function (l) {
-            return h('button', {
-              key: 'lb' + l.id, cls: 'nm-label', onClick: l.onTap, attrs: { type: 'button' },
-              css: 'position:absolute;transform:translate(-50%,-50%);width:max-content;max-width:132px;background:#fffaf0;border:2px solid #cbb392;border-radius:11px;padding:2px 8px 3px;font-size:10px;font-weight:800;line-height:1.4;text-align:center;color:#4a3a2a;box-shadow:0 3px 0 #cdb28d;pointer-events:auto;cursor:pointer;font-family:inherit;',
-              style: { left: l.x + 'px', top: l.y + 'px', opacity: l.op }
-            }, l.name);
-          }))
-        ) : null,
-        v.isNumbered ? h('div', { key: 'numbered', css: 'position:absolute;left:0;top:0;width:100%;height:100%;' },
-          h('div', {}, v.labels.map(function (l) {
-            return h('button', {
-              key: 'nb' + l.id, onClick: l.onTap, attrs: { type: 'button' },
-              css: "position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#d0663c;border:2px solid #fffaf0;color:#fff6e6;font-family:'Zen Maru Gothic',serif;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #a8462a;pointer-events:auto;cursor:pointer;padding:0;",
-              style: { left: l.px + 'px', top: l.py + 'px', opacity: l.op }
-            }, String(l.num));
-          })),
-          h('div', { css: 'position:absolute;right:10px;top:52px;bottom:10px;width:196px;background:rgba(255,250,240,.95);border:2px solid #cbb392;border-radius:16px;padding:8px 6px 8px 8px;overflow:auto;pointer-events:auto;box-shadow:0 4px 0 rgba(180,150,110,.4);' },
-            v.legend.map(function (g) {
-              return h('button', {
-                key: 'lg' + g.id, cls: 'nm-legend', onClick: g.onTap, attrs: { type: 'button' },
-                css: 'display:flex;gap:7px;align-items:flex-start;width:100%;text-align:left;border:0;background:transparent;padding:4px 2px;cursor:pointer;font-family:inherit;color:#4a3a2a;'
-              },
-                h('span', { css: 'flex:none;width:19px;height:19px;border-radius:50%;background:#d0663c;color:#fff6e6;font-weight:900;font-size:11px;display:flex;align-items:center;justify-content:center;' }, String(g.num)),
-                h('span', { css: 'min-width:0;' },
-                  h('span', { css: 'display:block;font-size:11px;font-weight:800;line-height:1.35;' }, g.name),
-                  h('span', { css: 'display:block;font-size:9.5px;color:#a8906e;' }, g.area)
-                )
-              );
-            })
-          )
-        ) : null
+        }))
       ) : null;
 
-      var modeBar = v.isRegion ? h('div', { key: 'modeBar', css: 'position:absolute;left:14px;bottom:12px;display:flex;gap:5px;background:rgba(255,250,240,.94);border:2px solid #cbb392;border-radius:999px;padding:4px;box-shadow:0 4px 0 rgba(180,150,110,.4);' },
-        [{ id: 'callout', label: '引き出し' }, { id: 'columns', label: '左右に整列' }, { id: 'numbered', label: '番号＋凡例' }, { id: 'bare', label: 'ピンだけ' }].map(function (m) {
-          var on = cmp.state.lmode === m.id;
-          return h('button', {
-            key: 'm' + m.id, attrs: { type: 'button' },
-            onClick: function () { cmp.setState({ lmode: m.id }); },
-            css: 'border:0;border-radius:999px;padding:5px 11px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;',
-            style: { background: on ? '#d0663c' : 'transparent', color: on ? '#fff6e6' : '#8a7358' }
-          }, m.label);
-        })
-      ) : null;
-
-      var topBar = h('div', { key: 'topBar', css: 'position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 32px);' },
+      var topBar = h('div', {
+        key: 'topBar',
+        css: 'position:absolute;left:16px;top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;',
+        /* レベル表示が出ている間は右上を空けて、地域名の帯とぶつからないようにする */
+        style: { 'max-width': 'calc(100% - ' + (v.hasLevelBadge ? 190 : 32) + 'px)' }
+      },
         v.isRegion ? h('button', {
           key: 'back', cls: 'nm-back', onClick: v.onBack, attrs: { type: 'button' },
           css: "border:3px solid #cbb392;background:#fffaf0;color:#4a3a2a;font-family:'Zen Maru Gothic',serif;font-weight:700;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;box-shadow:0 4px 0 #cdb28d;"
@@ -474,10 +430,26 @@
           h('span', { css: 'font-weight:500;color:#8a7358;font-size:11px;' }, v.regionBlurb))
       );
 
-      var combo = v.comboOn ? h('div', {
-        key: 'combo',
-        css: "position:absolute;right:16px;top:14px;background:#d0663c;color:#fff6e6;border-radius:999px;padding:6px 14px;font-family:'Zen Maru Gothic',serif;font-weight:900;font-size:14px;box-shadow:0 4px 0 #a8462a;animation:gkPop .3s ease-out;"
-      }, v.combo + ' コンボ！') : null;
+      /* 押した店の「にんにく度」を右上に出す（以前ここに出していたコンボ演出の置き換え）。
+         演出ではなく情報表示なので、登場アニメーションは付けない。 */
+      var levelBadge = v.hasLevelBadge ? h('div', {
+        key: 'lvbadge', cls: 'nm-lvbadge',
+        css: 'position:absolute;right:16px;top:14px;max-width:calc(100% - 32px);background:#fffaf0;border:3px solid #cbb392;border-radius:18px;padding:5px 12px 6px;box-shadow:0 4px 0 #cdb28d;'
+      },
+        h('div', { css: "font-family:'Roboto Mono',monospace;font-size:9px;letter-spacing:.1em;color:#a8906e;line-height:1.5;" }, 'にんにくレベル'),
+        h('div', { css: 'display:flex;align-items:center;gap:6px;' },
+          h('span', { css: 'display:flex;align-items:center;gap:1px;flex:none;' },
+            v.levelBadge.marks.map(function (n) {
+              return h('img', {
+                key: 'lvm' + n,
+                attrs: { src: A + 'garlic-sm-orange.svg', alt: '', loading: 'lazy', decoding: 'async' },
+                css: 'width:16px;height:16.5px;flex:none;display:block;'
+              });
+            })
+          ),
+          h('span', { css: "font-family:'Zen Maru Gothic',serif;font-weight:900;font-size:13px;line-height:1.3;color:#c0562f;" }, v.levelBadge.label)
+        )
+      ) : null;
 
       var noPins = v.noPins ? h('div', {
         key: 'nopins',
@@ -507,7 +479,7 @@
       var stage = h('div', {
         ref: v.stageRef,
         css: 'flex:3 1 400px;position:relative;overflow:hidden;border-radius:30px;height:clamp(420px,62vh,700px);background:linear-gradient(180deg,#cfe6ec 0%,#bcd9e4 55%,#a9cdda 100%);border:4px solid #fffaf0;box-shadow:0 14px 0 #d5bd9c,0 26px 40px rgba(90,64,36,.24),inset 0 -18px 40px rgba(60,90,110,.18);perspective:1200px;perspective-origin:50% 42%;'
-      }, board, hitJapan, hitRegion, modeBar, topBar, combo, noPins, detail, particles);
+      }, board, hitJapan, hitRegion, topBar, levelBadge, noPins, detail, particles);
 
       /* ---- お店リスト（order:-1 ＝ 左） ---- */
       var list = h('div', { css: 'order:-1;flex:1 1 272px;min-width:250px;display:flex;flex-direction:column;background:#fffaf0;border:4px solid #cbb392;border-radius:26px;padding:14px;box-shadow:0 10px 0 #d5bd9c,0 18px 30px rgba(90,64,36,.2);max-height:clamp(420px,62vh,700px);' },

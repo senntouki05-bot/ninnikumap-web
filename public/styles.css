@@ -39,8 +39,6 @@ img { max-width: 100%; }
 .nm-lvchip:hover { background: #ffe7d2 !important; }
 .nm-rpin:hover { filter: brightness(1.06); }
 .nm-pin:hover { filter: brightness(1.07) drop-shadow(0 3px 4px rgba(90,64,36,.35)); }
-.nm-label:hover { background: #fff3dc !important; }
-.nm-legend:hover { background: #fff3dc; border-radius: 8px; }
 .nm-back:hover { transform: translateY(-1px); }
 .nm-listitem:hover { background: #fff3dc !important; transform: translateY(-1px); }
 
