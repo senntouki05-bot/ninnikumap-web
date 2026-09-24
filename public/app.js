@@ -198,6 +198,8 @@
     isAffiliated: function () { return false; },
     relFor: function () { return 'nofollow noopener'; },
     hasAnyAffiliate: function () { return false; },
+    serviceOf: function () { return null; },
+    linkSwitchPid: function () { return ''; },
   };
 
   function adSlot(sizeLabel, boxCss, key) {
@@ -540,7 +542,9 @@
          （景表法5条3号・ステマ規制）。 */
       var links = [];
       if (s.tabelog_url) links.push({ svc: 'tabelog', href: s.tabelog_url, label: '食べログで見る' });
-      else if (s.official_url) links.push({ svc: 'official', href: s.official_url, label: '公式サイト' });
+      /* 公式サイト欄にホットペッパー等のページが入っている店がある → URL からサービスを引く
+         （LinkSwitch がそのリンクを変換するので、広告表示と sponsored をそちらにも付ける） */
+      else if (s.official_url) links.push({ svc: AFF.serviceOf(s.official_url) || 'official', href: s.official_url, label: '公式サイト' });
 
       return h('div', {
         key: 'detail',
@@ -567,16 +571,19 @@
             h('div', { css: 'margin-top:12px;padding:10px 12px;background:#fdf3e2;border-radius:14px;' },
               h('div', { css: 'font-size:12px;line-height:1.75;color:#6b5540;text-wrap:pretty;' }, s.review),
               s.sources && s.sources.length ? h('div', { css: 'font-size:10px;color:#a8906e;margin-top:7px;' },
-                '出典：', h('a', { attrs: { href: s.sources[0], target: '_blank', rel: 'noopener nofollow' }, css: 'color:#c0562f;' }, hostOf(s.sources[0]))
+                /* data-nodal: 出典リンクは LinkSwitch の変換対象から外す（出典は送客ではないので広告にしない） */
+                '出典：', h('a', { attrs: { href: s.sources[0], target: '_blank', rel: 'noopener nofollow', 'data-nodal': '' }, css: 'color:#c0562f;' }, hostOf(s.sources[0]))
               ) : null
             ),
             h('div', { css: 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;' },
               h('a', { attrs: { href: s.mapUrl, target: '_blank', rel: 'noopener' }, css: 'background:#d0663c;color:#fff6e6;border-radius:999px;padding:9px 16px;font-size:12px;font-weight:800;box-shadow:0 4px 0 #a8462a;text-decoration:none;' }, '地図アプリでひらく'),
               links.map(function (l, i) {
                 var sponsored = AFF.isAffiliated(l.svc);
+                /* key に店IDを含めて店ごとに <a> を作り直す。LinkSwitch は処理済みの <a> に
+                   data-nodal を付けて二度と触らないので、要素を使い回すと次の店のリンクが変換されない。 */
                 return h('a', {
-                  key: 'ln' + i,
-                  attrs: { href: AFF.decorate(l.svc, l.href), target: '_blank', rel: AFF.relFor(l.svc) },
+                  key: 'ln' + s.id + '-' + i,
+                  attrs: { href: AFF.decorate(l.svc, l.href), target: '_blank', rel: AFF.relFor(l.svc), 'data-svc': l.svc },
                   css: 'border:2px solid #cbb392;background:#fffaf0;color:#7a6448;font-size:12px;font-weight:800;padding:9px 16px;border-radius:999px;box-shadow:0 4px 0 #ddc7a6;text-decoration:none;'
                 }, l.label + (sponsored ? '［広告］' : ''));
               }),

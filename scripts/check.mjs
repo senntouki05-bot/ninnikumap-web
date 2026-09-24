@@ -135,7 +135,7 @@ for (const f of htmls) {
     if (re.test(robots)) fail(`robots.txt が ${asset} を塞いでいる（レンダリング時のサブリソース取得も止まる）`);
   }
   if (!/Sitemap:/i.test(robots)) fail('robots.txt に Sitemap: が無い');
-  for (const asset of ['/affiliate.js', '/affiliate-config.js']) {
+  for (const asset of ['/affiliate.js', '/affiliate-config.js', '/linkswitch.js']) {
     const re = new RegExp('^\\s*Disallow:\\s*' + asset.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'mi');
     if (re.test(robots)) fail(`robots.txt が ${asset} を塞いでいる`);
   }
@@ -151,11 +151,28 @@ for (const f of htmls) {
   const AFF = globalThis.NM_AFF;
   const cfg = AFF.loadConfig();
   const monetized = AFF.hasAnyAffiliate(cfg);
+  /* LinkSwitch（VC のタグ方式）。pid があれば全ページにタグが載り、services のドメインへの
+     リンクは実行時に計測リンクへ変わる＝静的HTMLの段階で sponsored と「広告」が要る。 */
+  const lsPid = AFF.linkSwitchPid(cfg);
+  const lsServices = AFF.linkSwitchServices(cfg);
+  if (cfg.linkSwitch && cfg.linkSwitch.pid && !lsPid) fail(`affiliate-config.js の linkSwitch.pid が数字ではない: ${JSON.stringify(cfg.linkSwitch.pid)}`);
+  if (lsPid) {
+    const ls = fs.existsSync(path.join(PUB, 'linkswitch.js')) ? fs.readFileSync(path.join(PUB, 'linkswitch.js'), 'utf8') : '';
+    if (!ls.includes(`var vc_pid = "${lsPid}";`)) fail(`/linkswitch.js の vc_pid が設定（${lsPid}）と一致しない`);
+    const priv = fs.readFileSync(path.join(PUB, 'privacy', 'index.html'), 'utf8');
+    if (!/バリューコマース/.test(priv)) fail('LinkSwitch を載せているのにプライバシーポリシーに外部送信（バリューコマース）の記載が無い');
+  } else if (fs.existsSync(path.join(PUB, 'linkswitch.js'))) {
+    fail('LinkSwitch 未設定なのに /linkswitch.js が残っている');
+  }
 
   for (const f of htmls) {
     const rel = relOf(f);
     const html = fs.readFileSync(f, 'utf8');
     if (!/id="ad-disclosure"/.test(html)) fail(`${rel}: 広告表示（#ad-disclosure）が無い`);
+    const hasTag = html.includes(`src="${AFF.linkSwitchSrc}"`) && html.includes('src="/linkswitch.js"');
+    if (lsPid && !hasTag) fail(`${rel}: LinkSwitch のタグが載っていない`);
+    if (!lsPid && html.includes('valuecommerce.com/vcdal.js')) fail(`${rel}: LinkSwitch 未設定なのに vcdal.js を読み込んでいる`);
+    if (/<script>\s*var vc_pid/.test(html)) fail(`${rel}: vc_pid をインラインscriptで書いている（CSP script-src 'self' で止まる）`);
     /* 文面と実態がずれると、それ自体が優良誤認になりうるので機械で縛る */
     const claimsAds = /広告（アフィリエイトリンク）が含まれます/.test(html);
     if (monetized && !claimsAds) fail(`${rel}: 収益化オンなのに「広告が含まれます」の開示が無い`);
@@ -164,10 +181,21 @@ for (const f of htmls) {
     /* アフィリエイト事業者のドメインへ出すリンクには必ず sponsored を付ける */
     for (const m of html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi)) {
       const host = (() => { try { return new URL(m[1]).hostname; } catch { return ''; } })();
-      const isAffHost = /(^|\.)(hb\.afl\.rakuten\.co\.jp|ck\.jp\.ap\.valuecommerce\.com)$/.test(host);
-      if (isAffHost && !/rel="[^"]*\bsponsored\b/.test(m[0])) {
+      const isAffHost = /(^|\.)(hb\.afl\.rakuten\.co\.jp|ck\.jp\.ap\.valuecommerce\.com|dalr\.valuecommerce\.com)$/.test(host);
+      const sponsored = /rel="[^"]*\bsponsored\b/.test(m[0]);
+      const nodal = /\bdata-nodal\b/.test(m[0]);
+      if (isAffHost && !sponsored) {
         fail(`${rel}: アフィリンクに rel="sponsored" が無い → ${m[1].slice(0, 60)}`);
       }
+      /* LinkSwitch: 提携中と宣言したサービスのドメインへのリンクは、
+         ①変換対象（data-nodal 無し）なら sponsored＋「広告」が要る ②出典（data-nodal）なら sponsored を付けてはいけない */
+      const svc = AFF.serviceOf(m[1]);
+      if (lsPid && svc && lsServices.includes(svc)) {
+        if (!nodal && !sponsored) fail(`${rel}: LinkSwitch が変換するリンクに sponsored が無い → ${m[1].slice(0, 60)}`);
+        if (!nodal && !/<\/a><span class="nm-ad-mark">広告<\/span>/.test(html.slice(m.index, m.index + 600))) fail(`${rel}: LinkSwitch が変換するリンクに「広告」表示が無い → ${m[1].slice(0, 60)}`);
+        if (nodal && sponsored) fail(`${rel}: 出典リンク（data-nodal）に sponsored が付いている → ${m[1].slice(0, 60)}`);
+      }
+      if (nodal && !svc && /rel="[^"]*\bsponsored\b/.test(m[0])) fail(`${rel}: data-nodal と sponsored が同居 → ${m[1].slice(0, 60)}`);
     }
   }
 
@@ -176,7 +204,7 @@ for (const f of htmls) {
   for (const pat of [/secret/i, /api[_-]?key/i, /password/i, /BEGIN [A-Z ]*PRIVATE KEY/, /\bsk-[A-Za-z0-9]{16}/]) {
     if (pat.test(cfgSrc)) fail(`affiliate-config.js に秘密らしき文字列がある（${pat}）— このファイルはブラウザに配信される`);
   }
-  console.log(`  広告: ${monetized ? '収益化オン' : '収益化オフ（全リンク素通し）'}`);
+  console.log(`  広告: ${monetized ? '収益化オン' : '収益化オフ（全リンク素通し）'}${lsPid ? `／LinkSwitch pid=${lsPid} services=[${lsServices.join(',')}]` : ''}`);
 }
 
 /* ---- 結果 ---- */

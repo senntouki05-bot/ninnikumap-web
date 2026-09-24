@@ -44,6 +44,20 @@ const AFF = globalThis.NM_AFF;
 const AFF_CFG = AFF.loadConfig();
 const MONETIZED = AFF.hasAnyAffiliate(AFF_CFG);
 
+/* バリューコマース LinkSwitch（2026-09-24）。pid があれば全ページにタグを載せる。
+   ⚠️ CSP が script-src 'self' なので `<script>var vc_pid=…</script>` のインライン記述は使えない
+      （ハッシュを CSP に書く手もあるが、値がずれた瞬間に黙って止まる）。
+      同一オリジンの /linkswitch.js を生成してそこに vc_pid を書き、その後ろで vcdal.js を async 読込する。
+   ⚠️ config に pid らしきものがあるのに数字でない＝書き間違い。黙ってオフにせずビルドを止める。 */
+const LS_PID = AFF.linkSwitchPid(AFF_CFG);
+if (AFF_CFG.linkSwitch && AFF_CFG.linkSwitch.pid && !LS_PID) {
+  console.error(`affiliate-config.js の linkSwitch.pid が数字ではない: ${JSON.stringify(AFF_CFG.linkSwitch.pid)}`);
+  process.exit(1);
+}
+const LS_TAG = LS_PID
+  ? `<script src="/linkswitch.js"></script><script src="${AFF.linkSwitchSrc}" async></script>`
+  : '';
+
 const SITE = JSON.parse(fs.readFileSync(path.join(DATA, 'site.json'), 'utf8'));
 const ORIGIN = SITE.origin.replace(/\/$/, '');
 const shops = JSON.parse(fs.readFileSync(path.join(DATA, 'shops.json'), 'utf8'));
@@ -187,6 +201,7 @@ ${body}
   ${AD_DISCLOSURE}
 </footer>
 ${appShell ? '<script src="/affiliate-config.js"></script><script src="/affiliate.js"></script><script src="/data.js"></script><script src="/core.js"></script><script src="/app.js" defer></script>' : ''}
+${LS_TAG ? `<!-- バリューコマース LinkSwitch（提携中の広告主へのリンクを計測リンクに置き換える）。設定=/affiliate-config.js -->\n${LS_TAG}` : ''}
 <!-- アクセス解析（自社・cookieless）。正本=~/dev/quirio-analytics、配布は npm run sync -->
 <script defer src="/qa.js"${is404 ? ' data-qa-404' : ''}></script>
 </body>
@@ -395,11 +410,13 @@ for (const s of shops) {
     ['ジャンル', `<a href="/genre/${g.id}/">${esc(g.label)}</a>`],
     ['にんにく度', `<span class="nm-badge lv${s.level}">${esc(LEVELS[s.level].label)}</span>${esc(LEVELS[s.level].desc)}`],
     ['看板メニュー', esc(s.menu) + (s.price ? `（${esc(s.price)}）` : '')],
-    s.official_url ? ['公式サイト', `<a href="${esc(s.official_url)}" rel="nofollow noopener" target="_blank">${esc(s.official_url)}</a>`] : null,
+    /* 公式サイト欄にホットペッパー等のページが入っている店がある（ch11）。URL からサービスを引き、
+       提携中なら食べログと同じく広告表示と sponsored を付ける。該当なしは 'official'＝素通し。 */
+    s.official_url ? ['公式サイト', extLink(AFF.serviceOf(s.official_url) || 'official', s.official_url, s.official_url)] : null,
     /* 食べログは掲載45軒中23軒にあり、写真・営業時間の確認先として実用性が高い。
        同時に本サイト唯一のまとまった送客面でもあるので decorate() を通す。
        ⚠️ 提携前（config が空）は装飾されず rel も sponsored にならない＝素の外部リンクとして出る。 */
-    s.tabelog_url ? ['食べログ', `<a href="${esc(AFF.decorate('tabelog', s.tabelog_url, AFF_CFG))}" rel="${AFF.relFor('tabelog', AFF_CFG)}" target="_blank">写真・口コミを見る</a>${AFF.isAffiliated('tabelog', AFF_CFG) ? '<span class="nm-ad-mark">広告</span>' : ''}`] : null,
+    s.tabelog_url ? ['食べログ', extLink('tabelog', s.tabelog_url, '写真・口コミを見る')] : null,
   ].filter(Boolean);
 
   const body = `<main class="nm-doc">
@@ -414,7 +431,7 @@ for (const s of shops) {
       <a href="/#/shop/${esc(s.id)}">にんにくマップで見る</a>
     </div>
     <p class="nm-note" style="margin-top:14px">
-      出典：${s.sources.map((u) => `<a href="${esc(u)}" rel="nofollow noopener" target="_blank">${esc(hostOf(u))}</a>`).join('、')}<br>
+      出典：${s.sources.map((u) => `<a href="${esc(u)}" rel="nofollow noopener" target="_blank" data-nodal="">${esc(hostOf(u))}</a>`).join('、')}<br>
       営業時間・定休日は変更されることがあります。訪問前に店舗の最新情報をご確認ください。誤りを見つけたら<a href="/contact/">こちら</a>からお知らせください。
     </p>
   </section>
@@ -519,6 +536,15 @@ ${[3, 2, 1].map((n) => `<li><strong>${esc(LEVELS[n].label)}</strong>：${esc(LEV
 <p>当サイトは広告を掲載することがあります。広告配信事業者がCookie等を用いて広告の最適化を行う場合があります。ブラウザの設定でCookieを無効にできます。</p>
 <p>また、当サイトはアフィリエイトプログラムを利用することがあります。この場合、当サイトのリンクを経由してご予約・ご購入いただくと、当サイトが広告主から報酬を受け取ることがあります。報酬が発生するリンクには「広告」と表示し、リンクに <code>rel="sponsored"</code> を付与しています。</p>
 <p><strong>掲載するお店の選定および記載内容は、報酬の有無や店舗からの依頼と無関係に決めています。</strong>掲載は編集上の判断のみで行っており、掲載料を受け取って店舗を掲載することはありません。掲載を見送った店舗については、その理由を記録しています。</p>
+${LS_PID ? `<h3>バリューコマース LinkSwitch（外部送信）</h3>
+<p>当サイトは、アフィリエイト・サービス・プロバイダであるバリューコマース株式会社の「LinkSwitch」を利用しています。各ページで同社のプログラム（<code>aml.valuecommerce.com</code>）を読み込み、提携中のサイト（例：ホットペッパーグルメ）へのリンクを、成果を計測できるリンクに置き換えます。</p>
+<ul>
+<li>送信先：バリューコマース株式会社（<code>valuecommerce.com</code>、<code>imgvc.com</code>）</li>
+<li>送信される情報：閲覧しているページのURL、参照元のURL、ブラウザの種類等の情報、同社が発行する識別子（Cookie）</li>
+<li>利用目的：リンクの置き換えと、リンク経由のご予約・ご購入等の成果の計測</li>
+<li>置き換えたリンクには「広告」と表示し、<code>rel="sponsored"</code> を付けています。出典として示すリンクは置き換えの対象から外しています。</li>
+<li>同社での情報の取り扱いと停止方法は、<a href="https://www.valuecommerce.ne.jp/" target="_blank" rel="noopener">バリューコマース株式会社のサイト</a>をご確認ください。</li>
+</ul>` : ''}
 <h2>外部リンク</h2>
 <p>当サイトは各店舗の公式サイトやグルメサイトへのリンクを含みます。リンク先での個人情報の取り扱いについては、各サイトのポリシーをご確認ください。</p>
 <h2>お問い合わせでいただいた情報</h2>
@@ -622,13 +648,24 @@ Sitemap: ${ORIGIN}/sitemap.xml
      許可はここに書くこと。 */
   const QA_ENDPOINT = 'https://quirio-analytics.wataru-okada.workers.dev';
 
+  /* バリューコマース LinkSwitch が使う外部ドメイン（2026-09-24 に本番オリジン上で vcdal.js を実走して観測）:
+       script: aml.valuecommerce.com（本体）／dalc.valuecommerce.com（変換ルールの JSONP）
+       img   : a.imgvc.com／dalb.valuecommerce.com（ビーコン画像）
+     クリック時の遷移先（ck.jp.ap／dalr.valuecommerce.com）はナビゲーションなので CSP の対象外。
+     ⚠️ 変換が始まると vcdal.js がインラインscriptを差す経路がある（未実測）。本番で
+        `node scripts/e2e.mjs https://ninnikumap.com` を当て、CSP エラーが出たらここを見直す。 */
+  const LS_SCRIPT = LS_PID ? ' https://aml.valuecommerce.com https://dalc.valuecommerce.com' : '';
+  const LS_IMG = LS_PID ? ' https://a.imgvc.com https://dalb.valuecommerce.com' : '';
+  if (LS_PID) write('linkswitch.js', `/* バリューコマース LinkSwitch の識別子（公開値）。生成元=scripts/build.mjs・設定=/affiliate-config.js */\nvar vc_pid = "${LS_PID}";\n`);
+  else if (fs.existsSync(path.join(PUB, 'linkswitch.js'))) fs.unlinkSync(path.join(PUB, 'linkswitch.js'));
+
   write('_headers', `/*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ${CFI_CONNECT} ${QA_ENDPOINT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}${LS_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:${LS_IMG}; connect-src 'self' ${CFI_CONNECT} ${QA_ENDPOINT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -636,6 +673,14 @@ Sitemap: ${ORIGIN}/sitemap.xml
 }
 
 function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } }
+
+/* 外部送客リンク。装飾（MyLink）／rel／「広告」表示を必ずセットで出す＝どれか1つだけ付く状態を作らない。
+   出典リンクはここを通さない（data-nodal で LinkSwitch からも外す）。 */
+function extLink(svc, url, label) {
+  /* data-svc: 送客リンクの印。LinkSwitch が href を書き換え data-nodal を付けた後でも、E2E がこの印で見つけられる。 */
+  return `<a href="${esc(AFF.decorate(svc, url, AFF_CFG))}" rel="${AFF.relFor(svc, AFF_CFG)}" target="_blank" data-svc="${esc(svc)}">${esc(label)}</a>` +
+    (AFF.isAffiliated(svc, AFF_CFG) ? '<span class="nm-ad-mark">広告</span>' : '');
+}
 
 /* ---------------- 集計を表示 ---------------- */
 const counts = regions.map((r) => `${r.name}${byRegion(r.id).length}`).join(' / ');

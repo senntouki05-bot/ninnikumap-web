@@ -57,16 +57,43 @@ eq(AFF.relFor('official', RAK), 'nofollow noopener', '未登録サービス: spo
 eq(AFF.isAffiliated('tabelog', OFF), false, 'isAffiliated: 未提携');
 eq(AFF.isAffiliated('tabelog', VC), true, 'isAffiliated: 提携済');
 
+console.log('\n― バリューコマース LinkSwitch（タグ方式）―');
+const LS = { linkSwitch: { pid: '892711261', services: ['hotpepper'] } };
+const HP = 'https://www.hotpepper.jp/strJ003851166/';
+eq(AFF.linkSwitchPid(LS), '892711261', 'pid を数字として読む');
+eq(AFF.linkSwitchPid({ linkSwitch: { pid: ' 892711261 ' } }), '892711261', 'pid の前後の空白は捨てる');
+eq(AFF.linkSwitchPid({ linkSwitch: { pid: 'abc' } }), '', '数字でない pid は未設定扱い（素通し）');
+eq(AFF.linkSwitchPid({ linkSwitch: { pid: '892711261"><script>' } }), '', 'HTMLを壊す文字列は未設定扱い');
+eq(AFF.linkSwitchPid(OFF), '', '未設定は空');
+eq(AFF.linkSwitchServices(LS).join(','), 'hotpepper', 'services を読む');
+eq(AFF.linkSwitchServices({ linkSwitch: { pid: '', services: ['hotpepper'] } }).length, 0, 'pid が無ければ services も空（タグが載らないので変換されない）');
+eq(AFF.decorate('hotpepper', HP, LS), HP, 'LinkSwitch は URL を1文字も変えない（変換は VC のスクリプトが実行時に行う）');
+eq(AFF.isAffiliated('hotpepper', LS), true, '宣言したサービスは提携中');
+eq(AFF.isAffiliated('tabelog', LS), false, '宣言していないサービスは提携扱いしない');
+eq(AFF.relFor('hotpepper', LS), 'sponsored nofollow noopener', '変換されるリンクには sponsored');
+eq(AFF.relFor('tabelog', LS), 'nofollow noopener', '変換されないリンクには付けない');
+eq(AFF.hasAnyAffiliate(LS), true, 'pid があれば収益化オン（開示文が切り替わる）');
+eq(AFF.hasAnyAffiliate({ linkSwitch: { pid: '892711261' } }), true, 'services が空でも pid があれば収益化オン（過剰開示の側に倒す）');
+eq(AFF.serviceOf(HP), 'hotpepper', 'URL → hotpepper');
+eq(AFF.serviceOf(TABELOG), 'tabelog', 'URL → tabelog');
+eq(AFF.serviceOf('https://diamondninniku.com/'), null, '公式サイトは該当なし');
+eq(AFF.serviceOf('https://hotpepper.jp.example.com/'), null, 'ドメインの末尾一致だけを見る（偽装ドメインに当たらない）');
+eq(AFF.serviceOf(''), null, '空URLは null');
+eq(AFF.serviceOf('not a url'), null, '壊れたURLは null');
+eq(AFF.linkSwitchSrc, 'https://aml.valuecommerce.com/vcdal.js', 'スクリプトの正本URL');
+eq(AFF.rescanLinkSwitch(), false, 'vcdal.js が無い環境では再走査しない（false）');
+
 console.log('\n― 壊れた設定でも落ちない ―');
-for (const broken of [null, undefined, 'string', 42, { valueCommerce: null }, { valueCommerce: { tabelog: null } }, { rakutenAffiliateId: null }]) {
+for (const broken of [null, undefined, 'string', 42, { valueCommerce: null }, { valueCommerce: { tabelog: null } }, { rakutenAffiliateId: null }, { linkSwitch: null }, { linkSwitch: 'x' }, { linkSwitch: { pid: 123, services: 'hotpepper' } }, { linkSwitch: { pid: null, services: [null, 1] } }]) {
   try {
     const r = AFF.decorate('tabelog', TABELOG, broken || {});
     if (typeof r !== 'string') bad(`壊れた設定で文字列以外が返った: ${JSON.stringify(broken)}`);
+    AFF.linkSwitchPid(broken || {}); AFF.linkSwitchServices(broken || {}); AFF.isAffiliated('hotpepper', broken || {}); AFF.hasAnyAffiliate(broken || {});
   } catch (e) {
     bad(`壊れた設定で例外: ${JSON.stringify(broken)} — ${e.message}`);
   }
 }
-ok('壊れた設定7種すべてで例外なし・素通し');
+ok('壊れた設定11種すべてで例外なし・素通し');
 
 console.log(fails ? `\n不合格 ${fails} 件` : '\nアフィリエイト層 すべて合格');
 process.exit(fails ? 1 : 0);
