@@ -159,10 +159,27 @@ for (const f of htmls) {
   if (lsPid) {
     const ls = fs.existsSync(path.join(PUB, 'linkswitch.js')) ? fs.readFileSync(path.join(PUB, 'linkswitch.js'), 'utf8') : '';
     if (!ls.includes(`var vc_pid = "${lsPid}";`)) fail(`/linkswitch.js の vc_pid が設定（${lsPid}）と一致しない`);
-    const priv = fs.readFileSync(path.join(PUB, 'privacy', 'index.html'), 'utf8');
-    if (!/バリューコマース/.test(priv)) fail('LinkSwitch を載せているのにプライバシーポリシーに外部送信（バリューコマース）の記載が無い');
   } else if (fs.existsSync(path.join(PUB, 'linkswitch.js'))) {
     fail('LinkSwitch 未設定なのに /linkswitch.js が残っている');
+  }
+  /* バリューコマースを何か使っていれば（MyLink／バナー／LinkSwitch）、外部送信の記載と CSP の許可が要る */
+  const vcMyLink = Object.keys(cfg.valueCommerce || {}).filter((k) => AFF.impressionPixel(k, cfg));
+  const vcBanner = AFF.hasAnyBanner(cfg);
+  if (lsPid || vcMyLink.length || vcBanner) {
+    const priv = fs.readFileSync(path.join(PUB, 'privacy', 'index.html'), 'utf8');
+    if (!/バリューコマース/.test(priv)) fail('バリューコマースを使っているのにプライバシーポリシーに外部送信の記載が無い');
+    if (lsPid && !/LinkSwitch/.test(priv)) fail('LinkSwitch を載せているのにプライバシーポリシーに LinkSwitch の記載が無い');
+  }
+  if (vcMyLink.length || vcBanner) {
+    const hdr = fs.readFileSync(path.join(PUB, '_headers'), 'utf8');
+    const imgSrc = (hdr.match(/img-src ([^;]+);/) || [])[1] || '';
+    for (const hst of ['https://ad.jp.ap.valuecommerce.com', 'https://i.imgvc.com']) {
+      if (!imgSrc.split(/\s+/).includes(hst)) fail(`CSP の img-src に ${hst} が無い（バナー／表示計測の画像が出ない）`);
+    }
+  }
+  /* 地図ページの広告枠に出すバナー設定が壊れていたら止める（壊れていると黙って「広告募集」表示に戻る） */
+  for (const k of Object.keys(cfg.banners || {})) {
+    if (!AFF.banner(k, cfg)) fail(`affiliate-config.js の banners.${k} が不正（sid/pid は数字・w/h は正の数）`);
   }
 
   for (const f of htmls) {
@@ -186,6 +203,13 @@ for (const f of htmls) {
       const nodal = /\bdata-nodal\b/.test(m[0]);
       if (isAffHost && !sponsored) {
         fail(`${rel}: アフィリンクに rel="sponsored" が無い → ${m[1].slice(0, 60)}`);
+      }
+      if (/(^|\.)ck\.jp\.ap\.valuecommerce\.com$/.test(host)) {
+        const tail = html.slice(m.index, m.index + 900);
+        if (!/<\/a><span class="nm-ad-mark">広告<\/span>/.test(tail)) fail(`${rel}: VC の広告リンクに「広告」表示が無い → ${m[1].slice(0, 60)}`);
+        const q = new URL(m[1].replace(/&amp;/g, '&')).searchParams;   // HTML 上の href は &amp; でエスケープされている
+        const px = `https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=${q.get('sid')}&amp;pid=${q.get('pid')}`;
+        if (!tail.slice(0, tail.indexOf('</a>')).includes(`<img src="${px}"`)) fail(`${rel}: VC の広告リンクに表示計測の画像（発行コードの1px画像）が無い → ${m[1].slice(0, 60)}`);
       }
       /* LinkSwitch: 提携中と宣言したサービスのドメインへのリンクは、
          ①変換対象（data-nodal 無し）なら sponsored＋「広告」が要る ②出典（data-nodal）なら sponsored を付けてはいけない */

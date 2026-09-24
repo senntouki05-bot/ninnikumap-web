@@ -256,6 +256,33 @@ for (const p of ['/list/', '/about/', '/contact/', '/privacy/', '/area/kanto/'])
   } else {
     ok('LinkSwitch 未設定（タグなし）');
   }
+
+  /* 画像バナー（affiliate-config.js の banners）: 地図ページの広告枠に出るか／画像が実際に読み込めたか
+     （CSP で止まると枠は出るが画像が 0px になる）／sponsored と「広告」表示 */
+  const slots = Object.keys(cfg.banners || {}).filter((k) => AFF.banner(k, cfg));
+  if (slots.length) {
+    for (const [w, h, label] of [[1440, 900, 'desktop'], [390, 844, 'iphone']]) {
+      const page = await newPage(w, h);
+      await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+      await page.waitForTimeout(2000);
+      const bs = await page.evaluate(() => [...document.querySelectorAll('.nm-banner')].map((el) => {
+        const a = el.querySelector('a'); const img = el.querySelector('img'); const r = img ? img.getBoundingClientRect() : null;
+        return { href: a && a.getAttribute('href'), rel: a && a.getAttribute('rel'), src: img && img.getAttribute('src'), nw: img ? img.naturalWidth : 0, w: r ? Math.round(r.width) : 0, h: r ? Math.round(r.height) : 0, mark: (el.querySelector('.nm-ad-mark') || {}).textContent || '' };
+      }));
+      bs.length === slots.length ? ok(`${label}: 広告バナー ${bs.length} 枠が出た`) : bad(`${label}: 広告バナーが ${bs.length} 枠（設定は ${slots.length}）`);
+      for (const b of bs) {
+        const id = (b.src || '').match(/pid=(\d+)/)?.[1] || '?';
+        (b.nw > 1) ? ok(`${label}: バナー pid=${id} の画像が読み込めた（${b.w}×${b.h}px で表示）`) : bad(`${label}: バナー pid=${id} の画像が読み込めていない（CSP か VC 側）`);
+        /\bsponsored\b/.test(b.rel || '') && b.mark === '広告' ? ok(`${label}: バナー pid=${id} に sponsored と「広告」`) : bad(`${label}: バナー pid=${id} の広告表示が欠けている`);
+      }
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      over <= 1 ? ok(`${label}: バナーを入れても横スクロールなし`) : bad(`${label}: バナーで横に ${over}px はみ出した`);
+      const errs = page.__errors.filter((e) => /Content Security Policy|valuecommerce|imgvc/i.test(e));
+      errs.length === 0 ? ok(`${label}: バナー関連の CSP／読み込みエラーなし`) : bad(`${label}: ${errs[0].slice(0, 160)}`);
+      await page.screenshot({ path: path.join(SHOTS, `20-banner-${label}.png`) });
+      await page.close();
+    }
+  }
 }
 
 await browser.close();

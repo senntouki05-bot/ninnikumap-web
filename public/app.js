@@ -200,10 +200,30 @@
     hasAnyAffiliate: function () { return false; },
     serviceOf: function () { return null; },
     linkSwitchPid: function () { return ''; },
+    impressionPixel: function () { return ''; },
+    banner: function () { return null; },
   };
 
-  function adSlot(sizeLabel, boxCss, key) {
+  /* realCss: 実広告を出すときの外枠。募集中の縞模様の枠（boxCss）は高さ固定なので、実バナーには使わない。 */
+  function adSlot(sizeLabel, boxCss, key, realCss) {
     boxCss = 'min-width:0;max-width:100%;' + boxCss;
+    /* バリューコマースの画像バナー（affiliate-config.js の banners）。
+       「広告」表示は画像の上に重ねない（広告主の画像を隠さない）＝画像の下に出す。 */
+    var b = AFF.banner(key);
+    if (b) {
+      return h('div', { key: 'ad-' + key, cls: 'nm-banner', css: 'min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;' + (realCss || '') },
+        h('a', {
+          attrs: { href: b.href, target: '_blank', rel: 'sponsored nofollow noopener', 'data-svc': 'vc-banner' },
+          css: 'display:block;max-width:100%;line-height:0;'
+        },
+          h('img', {
+            attrs: { src: b.img, width: String(b.w), height: String(b.h), alt: b.alt, loading: 'lazy', decoding: 'async' },
+            css: 'display:block;max-width:100%;height:auto;border:0;'
+          })
+        ),
+        h('span', { cls: 'nm-ad-mark', css: 'margin-left:0;' }, '広告')
+      );
+    }
     var ad = ADS[key];
     if (ad && ad.html) {
       /* 実広告を出すときは「広告」と分かる表示を必ず添える（景表法5条3号・ステマ規制）。 */
@@ -251,7 +271,7 @@
           adSlot('この横長の枠に広告を出せます（728 × 90）', 'height:88px;border-radius:12px;' + stripe + 'display:flex;align-items:center;justify-content:center;', 'leaderboard')
         ),
         h('div', { css: 'flex:1 1 200px;background:#fffaf0;border:3px solid #cbb392;border-radius:18px;padding:10px;box-shadow:0 8px 0 #d5bd9c,0 14px 22px rgba(90,64,36,.18);display:flex;flex-direction:column;justify-content:center;' },
-          adSlot('300 × 250', 'aspect-ratio:300/250;max-height:110px;border-radius:12px;' + stripe + 'display:flex;align-items:center;justify-content:center;', 'rect'),
+          adSlot('300 × 250', 'aspect-ratio:300/250;max-height:110px;border-radius:12px;' + stripe + 'display:flex;align-items:center;justify-content:center;', 'rect', 'flex:1;'),
           h('a', { attrs: { href: './contact/' }, css: 'font-size:11px;color:#a8906e;text-align:center;margin-top:7px;display:block;text-decoration:none;' }, 'この看板を出したい人はこちら')
         ),
         h('a', { attrs: { href: './contact/' }, css: 'flex:1 1 180px;background:#fff2e4;border:3px dashed #e6c8a8;border-radius:18px;padding:12px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;' },
@@ -271,7 +291,7 @@
         ),
         h('div', { css: 'flex:2 1 340px;min-width:260px;background:#fffaf0;border:3px solid #cbb392;border-radius:18px;padding:8px 10px;box-shadow:0 6px 0 #d5bd9c;display:flex;align-items:center;gap:10px;' },
           h('div', { css: "writing-mode:vertical-rl;font-family:'Roboto Mono',monospace;font-size:9px;letter-spacing:.14em;color:#a8906e;" }, 'SPONSOR'),
-          adSlot('468 × 60', 'flex:1;height:52px;border-radius:10px;' + stripe + 'display:flex;align-items:center;justify-content:center;', 'banner')
+          adSlot('468 × 60', 'flex:1;height:52px;border-radius:10px;' + stripe + 'display:flex;align-items:center;justify-content:center;', 'banner', 'flex:1;')
         ),
         h('div', { css: 'display:flex;align-items:flex-end;gap:8px;background:#fffaf0;border:3px solid #cbb392;border-radius:20px;padding:8px 16px 6px;box-shadow:0 6px 0 #d5bd9c;' },
           h('div', { css: "font-family:'Zen Maru Gothic',serif;font-weight:900;font-size:34px;line-height:1;color:#d0663c;" }, String(v.counter)),
@@ -585,7 +605,9 @@
                   key: 'ln' + s.id + '-' + i,
                   attrs: { href: AFF.decorate(l.svc, l.href), target: '_blank', rel: AFF.relFor(l.svc), 'data-svc': l.svc },
                   css: 'border:2px solid #cbb392;background:#fffaf0;color:#7a6448;font-size:12px;font-weight:800;padding:9px 16px;border-radius:999px;box-shadow:0 4px 0 #ddc7a6;text-decoration:none;'
-                }, l.label + (sponsored ? '［広告］' : ''));
+                },
+                  AFF.impressionPixel(l.svc) ? h('img', { key: 'px', attrs: { src: AFF.impressionPixel(l.svc), width: '0', height: '1', alt: '' }, css: 'border:0;' }) : null,
+                  l.label + (sponsored ? '［広告］' : ''));
               }),
               h('button', { onClick: v.onClose, attrs: { type: 'button' }, css: 'border:0;background:transparent;color:#a8906e;font-family:inherit;font-size:12px;padding:9px 6px;cursor:pointer;' }, 'とじる')
             )

@@ -54,6 +54,11 @@ if (AFF_CFG.linkSwitch && AFF_CFG.linkSwitch.pid && !LS_PID) {
   console.error(`affiliate-config.js の linkSwitch.pid が数字ではない: ${JSON.stringify(AFF_CFG.linkSwitch.pid)}`);
   process.exit(1);
 }
+/* バリューコマースを何か1つでも使っているか（MyLink／画像バナー／LinkSwitch）。
+   プライバシーポリシーの外部送信の記載と、CSP の画像の許可をこれで出し分ける。 */
+const VC_MYLINK = Object.keys(AFF_CFG.valueCommerce || {}).filter((k) => AFF.impressionPixel(k, AFF_CFG));
+const VC_BANNER = AFF.hasAnyBanner(AFF_CFG);
+const VC_ANY = !!LS_PID || VC_MYLINK.length > 0 || VC_BANNER;
 const LS_TAG = LS_PID
   ? `<script src="/linkswitch.js"></script><script src="${AFF.linkSwitchSrc}" async></script>`
   : '';
@@ -536,14 +541,16 @@ ${[3, 2, 1].map((n) => `<li><strong>${esc(LEVELS[n].label)}</strong>：${esc(LEV
 <p>当サイトは広告を掲載することがあります。広告配信事業者がCookie等を用いて広告の最適化を行う場合があります。ブラウザの設定でCookieを無効にできます。</p>
 <p>また、当サイトはアフィリエイトプログラムを利用することがあります。この場合、当サイトのリンクを経由してご予約・ご購入いただくと、当サイトが広告主から報酬を受け取ることがあります。報酬が発生するリンクには「広告」と表示し、リンクに <code>rel="sponsored"</code> を付与しています。</p>
 <p><strong>掲載するお店の選定および記載内容は、報酬の有無や店舗からの依頼と無関係に決めています。</strong>掲載は編集上の判断のみで行っており、掲載料を受け取って店舗を掲載することはありません。掲載を見送った店舗については、その理由を記録しています。</p>
-${LS_PID ? `<h3>バリューコマース LinkSwitch（外部送信）</h3>
-<p>当サイトは、アフィリエイト・サービス・プロバイダであるバリューコマース株式会社の「LinkSwitch」を利用しています。各ページで同社のプログラム（<code>aml.valuecommerce.com</code>）を読み込み、提携中のサイト（例：ホットペッパーグルメ）へのリンクを、成果を計測できるリンクに置き換えます。</p>
+${VC_ANY ? `<h3>バリューコマース（外部送信）</h3>
+<p>当サイトは、アフィリエイト・サービス・プロバイダであるバリューコマース株式会社のサービスを利用しています。</p>
 <ul>
+${VC_MYLINK.length || VC_BANNER ? `<li>広告リンク・広告画像：食べログ等への一部のリンクと広告画像は、同社のサーバー（<code>ck.jp.ap.valuecommerce.com</code>）を経由して遷移し、表示の際に同社のサーバー（<code>ad.jp.ap.valuecommerce.com</code>、<code>i.imgvc.com</code>）から画像を読み込みます。</li>` : ''}
+${LS_PID ? `<li>LinkSwitch：各ページで同社のプログラム（<code>aml.valuecommerce.com</code>）を読み込み、提携中のサイトへのリンクを、成果を計測できるリンクに置き換えます。</li>` : ''}
 <li>送信先：バリューコマース株式会社（<code>valuecommerce.com</code>、<code>imgvc.com</code>）</li>
 <li>送信される情報：閲覧しているページのURL、参照元のURL、ブラウザの種類等の情報、同社が発行する識別子（Cookie）</li>
-<li>利用目的：リンクの置き換えと、リンク経由のご予約・ご購入等の成果の計測</li>
-<li>置き換えたリンクには「広告」と表示し、<code>rel="sponsored"</code> を付けています。出典として示すリンクは置き換えの対象から外しています。</li>
-<li>同社での情報の取り扱いと停止方法は、<a href="https://www.valuecommerce.ne.jp/" target="_blank" rel="noopener">バリューコマース株式会社のサイト</a>をご確認ください。</li>
+<li>利用目的：広告の表示と、リンク経由のご予約・ご購入等の成果の計測</li>
+<li>報酬が発生するリンク・画像には「広告」と表示し、リンクに <code>rel="sponsored"</code> を付けています。出典として示すリンクは置き換えの対象から外しています。</li>
+<li>同社での情報の取り扱いと停止方法は、<a href="https://www.valuecommerce.ne.jp/" target="_blank" rel="noopener" data-nodal="">バリューコマース株式会社のサイト</a>をご確認ください。</li>
 </ul>` : ''}
 <h2>外部リンク</h2>
 <p>当サイトは各店舗の公式サイトやグルメサイトへのリンクを含みます。リンク先での個人情報の取り扱いについては、各サイトのポリシーをご確認ください。</p>
@@ -656,6 +663,9 @@ Sitemap: ${ORIGIN}/sitemap.xml
         `node scripts/e2e.mjs https://ninnikumap.com` を当て、CSP エラーが出たらここを見直す。 */
   const LS_SCRIPT = LS_PID ? ' https://aml.valuecommerce.com https://dalc.valuecommerce.com' : '';
   const LS_IMG = LS_PID ? ' https://a.imgvc.com https://dalb.valuecommerce.com' : '';
+  /* MyLink の表示計測ピクセルと画像バナー: ad.jp.ap.valuecommerce.com/servlet/gifbanner が
+     i.imgvc.com の実画像（バナー）または 1x1.gif（テキストリンク）へ 302 する（2026-09-25 実測）。 */
+  const VC_IMG = (VC_MYLINK.length || VC_BANNER) ? ' https://ad.jp.ap.valuecommerce.com https://i.imgvc.com' : '';
   if (LS_PID) write('linkswitch.js', `/* バリューコマース LinkSwitch の識別子（公開値）。生成元=scripts/build.mjs・設定=/affiliate-config.js */\nvar vc_pid = "${LS_PID}";\n`);
   else if (fs.existsSync(path.join(PUB, 'linkswitch.js'))) fs.unlinkSync(path.join(PUB, 'linkswitch.js'));
 
@@ -665,7 +675,7 @@ Sitemap: ${ORIGIN}/sitemap.xml
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}${LS_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:${LS_IMG}; connect-src 'self' ${CFI_CONNECT} ${QA_ENDPOINT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' ${CFI_SCRIPT}${LS_SCRIPT}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:${LS_IMG}${VC_IMG}; connect-src 'self' ${CFI_CONNECT} ${QA_ENDPOINT}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -678,7 +688,10 @@ function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } c
    出典リンクはここを通さない（data-nodal で LinkSwitch からも外す）。 */
 function extLink(svc, url, label) {
   /* data-svc: 送客リンクの印。LinkSwitch が href を書き換え data-nodal を付けた後でも、E2E がこの印で見つけられる。 */
-  return `<a href="${esc(AFF.decorate(svc, url, AFF_CFG))}" rel="${AFF.relFor(svc, AFF_CFG)}" target="_blank" data-svc="${esc(svc)}">${esc(label)}</a>` +
+  /* MyLink の発行コードはリンクの中に表示計測の 1px 画像を持つ。改変しないため同じ位置に置く。 */
+  const px = AFF.impressionPixel(svc, AFF_CFG);
+  const pxTag = px ? `<img src="${esc(px)}" height="1" width="0" alt="" style="border:0">` : '';
+  return `<a href="${esc(AFF.decorate(svc, url, AFF_CFG))}" rel="${AFF.relFor(svc, AFF_CFG)}" target="_blank" data-svc="${esc(svc)}">${pxTag}${esc(label)}</a>` +
     (AFF.isAffiliated(svc, AFF_CFG) ? '<span class="nm-ad-mark">広告</span>' : '');
 }
 

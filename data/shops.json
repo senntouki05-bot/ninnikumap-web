@@ -113,13 +113,14 @@
     "lat": 40.349163,
     "lon": 141.111908,
     "official_url": "https://www.takkogarlicsteak.com/shop.html",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/aomori/A0203/A020302/2012231/",
     "sources": [
       "https://www.takkogarlicsteak.com/shop.html"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加。田子ガーリックステーキごはんの提供3店のうち、従来のマップに載っていなかった1店"
+      "新規追加。田子ガーリックステーキごはんの提供3店のうち、従来のマップに載っていなかった1店",
+      "食べログURLを追加（2026-09-25・住所 田子字天神堂向123 で照合）"
     ],
     "geo_source": "gsi"
   },
@@ -236,7 +237,7 @@
     "lat": 35.706308,
     "lon": 139.667789,
     "official_url": "https://thegarlic-nakano.com/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1319/A131902/13221793/",
     "sources": [
       "https://thegarlic-nakano.com/",
       "https://gh7u400.gorp.jp/",
@@ -245,7 +246,8 @@
     "was_existing": true,
     "corrections": [
       "★店名が変わっている。正しくは「にんにくバル ザ・ガーリック中野」。「中野 はじめの一っぽ」は旧店名",
-      "「神楽坂の姉妹店」は現在は誤り。2019年10月にのれん分けで運営が変わり、現在の系列店は渋谷の「ニンニクバル にょんにょご」"
+      "「神楽坂の姉妹店」は現在は誤り。2019年10月にのれん分けで運営が変わり、現在の系列店は渋谷の「ニンニクバル にょんにょご」",
+      "食べログURLを追加（2026-09-25・住所 中野5-32-5 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -267,7 +269,7 @@
     "lat": 35.663822,
     "lon": 139.69371,
     "official_url": "https://thegarlic-nakano.com/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1318/A131810/13291416/",
     "sources": [
       "https://thegarlic-nakano.com/",
       "https://www.shibukei.com/headline/18060/",
@@ -275,7 +277,8 @@
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加（従来のマップには未掲載）"
+      "新規追加（従来のマップには未掲載）",
+      "食べログURLを追加（2026-09-25・住所 神山町7-8 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -451,7 +454,7 @@
     "lat": 35.647202,
     "lon": 139.716461,
     "official_url": "",
-    "tabelog_url": "https://tabelog.com/tokyo/A1303/A130302/13003056/",
+    "tabelog_url": "https://tabelog.com/tokyo/A1303/A130302/13001621/",
     "sources": [
       "https://r.gnavi.co.jp/dt7xb17g0000/",
       "https://hitosara.com/dish/51garlic.html",
@@ -459,7 +462,8 @@
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "★食べログURLが別の店（浜町藪そば）を指していた→正しいページに修正（2026-09-25・住所 恵比寿1-26-12 で照合）"
     ],
     "geo_source": "gsi"
   },
@@ -511,7 +515,7 @@
     "lat": 35.750137,
     "lon": 139.802155,
     "official_url": "https://ajobase.jp/",
-    "tabelog_url": "https://tabelog.com/tokyo/A1324/A132402/13285403/",
+    "tabelog_url": "https://tabelog.com/tokyo/A1324/A132402/13274651/",
     "sources": [
       "https://ajobase.jp/",
       "https://ahoya229.com/",
@@ -519,7 +523,8 @@
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "★食べログURLが別の店（中華居酒屋 超兄貴・新橋）を指していた→正しいページに修正（2026-09-25・住所 千住2-29-1 で照合）"
     ],
     "geo_source": "gsi"
   },
@@ -541,13 +546,14 @@
     "lat": 35.734905,
     "lon": 139.73645,
     "official_url": "https://ahoya229.com/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/tokyo/A1323/A132301/13279253/",
     "sources": [
       "https://ahoya229.com/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "食べログURLを追加（2026-09-25・住所 巣鴨3-33-1 で照合）"
     ],
     "geo_source": "gsi"
   },
@@ -779,13 +785,14 @@
     "lat": 35.278656,
     "lon": 136.934448,
     "official_url": "http://www.k-betokon.com/access/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/aichi/A2303/A230301/23003300/",
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "食べログURLを追加（2026-09-25・住所 北外山2995-1 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -807,13 +814,14 @@
     "lat": 35.177944,
     "lon": 136.852539,
     "official_url": "http://www.k-betokon.com/access/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/aichi/A2301/A230113/23011924/",
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "食べログURLを追加（2026-09-25・住所 本陣通5-82 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -835,13 +843,14 @@
     "lat": 35.210705,
     "lon": 136.946274,
     "official_url": "http://www.k-betokon.com/access/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/aichi/A2301/A230114/23033835/",
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "食べログURLを追加（2026-09-25・住所 幸心2-301 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -863,13 +872,14 @@
     "lat": 35.356026,
     "lon": 136.736481,
     "official_url": "http://www.k-betokon.com/access/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/gifu/A2101/A210102/21002032/",
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加"
+      "新規追加",
+      "食べログURLを追加（2026-09-25・食べログ上の店名は「新京 笠松店」。住所 笠松町門間381 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },
@@ -891,13 +901,14 @@
     "lat": 35.407444,
     "lon": 136.868546,
     "official_url": "http://www.k-betokon.com/access/",
-    "tabelog_url": "",
+    "tabelog_url": "https://tabelog.com/gifu/A2101/A210102/21002364/",
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
     "was_existing": false,
     "corrections": [
-      "新規追加。公式サイトの住所表記は旧字の「各務ヶ原」だが、現行の行政区画は各務原市"
+      "新規追加。公式サイトの住所表記は旧字の「各務ヶ原」だが、現行の行政区画は各務原市",
+      "食べログURLを追加（2026-09-25・住所 蘇原栄町4-16-1 で照合）"
     ],
     "geo_source": "research(GSI照合済み)"
   },

@@ -110,6 +110,46 @@
     return false;
   }
 
+  /* --- バリューコマースの表示計測用ピクセル（MyLink 発行コードに入っている 1px 画像）----------
+     発行コードは <a …><img src="//ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=&pid=" height="1" width="0">テキスト</a>。
+     表示回数の計測用。クリックの計測には要らないが、発行コードを改変しないため同じ位置に置く。
+     その serviceId が MyLink で装飾されるときだけ URL を返す（未設定は ''）。 */
+  function impressionPixel(serviceId, cfg) {
+    cfg = cfg || loadConfig();
+    var vc = (cfg.valueCommerce || {})[serviceId];
+    if (!vc || !(vc.sid || '').trim() || !(vc.pid || '').trim()) return '';
+    return 'https://ad.jp.ap.valuecommerce.com/servlet/gifbanner?sid=' +
+      encodeURIComponent(vc.sid.trim()) + '&pid=' + encodeURIComponent(vc.pid.trim());
+  }
+
+  /* --- バリューコマースの画像バナー -------------------------------------------------
+     発行コードの <noscript> 側と同じ形: <a href="//ck.jp.ap…/referral?sid=&pid="><img src="//ad.jp.ap…/gifbanner?sid=&pid="></a>
+     sid/pid が数字でない・w/h が正の数でないものは null（＝広告枠は「広告募集」の表示のまま）。 */
+  function banner(slot, cfg) {
+    cfg = cfg || loadConfig();
+    var b = (cfg.banners || {})[slot];
+    if (!b || typeof b !== 'object') return null;
+    var sid = String(b.sid == null ? '' : b.sid).trim();
+    var pid = String(b.pid == null ? '' : b.pid).trim();
+    var w = Number(b.w), hgt = Number(b.h);
+    if (!/^[0-9]{1,20}$/.test(sid) || !/^[0-9]{1,20}$/.test(pid)) return null;
+    if (!(w > 0 && w <= 2000) || !(hgt > 0 && hgt <= 2000)) return null;
+    var q = '?sid=' + sid + '&pid=' + pid;
+    return {
+      href: 'https://ck.jp.ap.valuecommerce.com/servlet/referral' + q,
+      img: 'https://ad.jp.ap.valuecommerce.com/servlet/gifbanner' + q,
+      w: w, h: hgt,
+      alt: typeof b.alt === 'string' && b.alt.trim() ? b.alt.trim() : '広告',
+    };
+  }
+
+  function hasAnyBanner(cfg) {
+    cfg = cfg || loadConfig();
+    var bs = cfg.banners || {};
+    for (var k in bs) if (Object.prototype.hasOwnProperty.call(bs, k) && banner(k, cfg)) return true;
+    return false;
+  }
+
   /* 外部送客URLを装飾する単一チョークポイント。
      未対応サービス・未設定・空URL・'#' は url をそのまま返す（＝壊さない）。 */
   function decorate(serviceId, url, cfg) {
@@ -134,6 +174,7 @@
   function hasAnyAffiliate(cfg) {
     cfg = cfg || loadConfig();
     if (linkSwitchPid(cfg)) return true;
+    if (hasAnyBanner(cfg)) return true;
     if ((cfg.rakutenAffiliateId || '').trim()) return true;
     var vc = cfg.valueCommerce || {};
     for (var k in vc) {
@@ -211,6 +252,9 @@
     relFor: relFor,
     loadConfig: loadConfig,
     serviceOf: serviceOf,
+    impressionPixel: impressionPixel,
+    banner: banner,
+    hasAnyBanner: hasAnyBanner,
     linkSwitchPid: linkSwitchPid,
     linkSwitchServices: linkSwitchServices,
     linkSwitchSrc: LINKSWITCH_SRC,
