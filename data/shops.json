@@ -18,6 +18,7 @@
     "lon": 141.35643,
     "official_url": "https://diamondninniku.com/",
     "tabelog_url": "https://tabelog.com/hokkaido/A0101/A010102/1069591/",
+    "tabelog_booking": false,
     "sources": [
       "https://diamondninniku.com/",
       "https://tabelog.com/hokkaido/A0101/A010102/1069591/",
@@ -50,6 +51,7 @@
     "lon": 141.111908,
     "official_url": "https://www.garlicenter.com/",
     "tabelog_url": "https://tabelog.com/aomori/A0203/A020302/2000593/",
+    "tabelog_booking": false,
     "sources": [
       "https://www.garlicenter.com/restaurant/",
       "https://www.takkogarlicsteak.com/shop/garliccenter.html",
@@ -83,6 +85,7 @@
     "lon": 141.111908,
     "official_url": "https://www.takkogarlicsteak.com/shop/yuzushi.html",
     "tabelog_url": "https://tabelog.com/aomori/A0203/A020302/2008725/",
+    "tabelog_booking": false,
     "sources": [
       "https://www.takkogarlicsteak.com/shop/yuzushi.html",
       "https://tabelog.com/aomori/A0203/A020302/2008725/"
@@ -114,6 +117,7 @@
     "lon": 141.111908,
     "official_url": "https://www.takkogarlicsteak.com/shop.html",
     "tabelog_url": "https://tabelog.com/aomori/A0203/A020302/2012231/",
+    "tabelog_booking": false,
     "sources": [
       "https://www.takkogarlicsteak.com/shop.html"
     ],
@@ -143,6 +147,7 @@
     "lon": 139.693665,
     "official_url": "https://www.instagram.com/garlicxgarlic/",
     "tabelog_url": "https://tabelog.com/tokyo/A1303/A130301/13143097/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1303/A130301/13143097/",
       "https://www.hotpepper.jp/strJ003340934/",
@@ -175,6 +180,7 @@
     "lon": 139.783524,
     "official_url": "https://www.instagram.com/garlicxgarlickitchen/",
     "tabelog_url": "https://tabelog.com/tokyo/A1302/A130204/13228336/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1302/A130204/13228336/",
       "https://www.hotpepper.jp/strJ003340937/",
@@ -206,6 +212,7 @@
     "lon": 139.740424,
     "official_url": "https://yoyaku.toreta.in/hajimenoippo",
     "tabelog_url": "https://tabelog.com/tokyo/A1309/A130905/13000390/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1309/A130905/13000390/",
       "https://hitosara.com/0032012077/",
@@ -238,6 +245,7 @@
     "lon": 139.667789,
     "official_url": "https://thegarlic-nakano.com/",
     "tabelog_url": "https://tabelog.com/tokyo/A1319/A131902/13221793/",
+    "tabelog_booking": true,
     "sources": [
       "https://thegarlic-nakano.com/",
       "https://gh7u400.gorp.jp/",
@@ -270,6 +278,7 @@
     "lon": 139.69371,
     "official_url": "https://thegarlic-nakano.com/",
     "tabelog_url": "https://tabelog.com/tokyo/A1318/A131810/13291416/",
+    "tabelog_booking": true,
     "sources": [
       "https://thegarlic-nakano.com/",
       "https://www.shibukei.com/headline/18060/",
@@ -301,6 +310,7 @@
     "lon": 139.681156,
     "official_url": "https://www.instagram.com/okada_garlic/",
     "tabelog_url": "https://tabelog.com/tokyo/A1317/A131705/13221890/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1317/A131705/13221890/",
       "https://hitosara.com/0031355879/",
@@ -333,6 +343,7 @@
     "lon": 139.634018,
     "official_url": "https://americanhouse.co.jp/shop/garlic-jos-queens-square/",
     "tabelog_url": "https://tabelog.com/kanagawa/A1401/A140103/14002204/",
+    "tabelog_booking": false,
     "sources": [
       "https://americanhouse.co.jp/shop/garlic-jos-queens-square/",
       "https://tabelog.com/kanagawa/A1401/A140103/14002204/"
@@ -363,6 +374,7 @@
     "lon": 139.6453867,
     "official_url": "https://americanhouse.co.jp/shop/garlic-jos-motomachi/",
     "tabelog_url": "https://tabelog.com/kanagawa/A1401/A140105/14067368/",
+    "tabelog_booking": false,
     "sources": [
       "https://americanhouse.co.jp/shop/garlic-jos-motomachi/",
       "https://tabelog.com/kanagawa/A1401/A140105/14067368/",
@@ -394,6 +406,7 @@
     "lon": 139.697968,
     "official_url": "https://americanhouse.co.jp/shop/garlic-jos-kawasaki-azalea/",
     "tabelog_url": "https://tabelog.com/kanagawa/A1405/A140501/14086902/",
+    "tabelog_booking": false,
     "sources": [
       "https://americanhouse.co.jp/shop/garlic-jos-kawasaki-azalea/",
       "https://www.azalea.co.jp/shops/2013",
@@ -424,6 +437,7 @@
     "lon": 139.671823,
     "official_url": "https://www.instagram.com/ninnikuhonpomiyabi/",
     "tabelog_url": "https://tabelog.com/kanagawa/A1406/A140601/14006194/",
+    "tabelog_booking": false,
     "sources": [
       "https://tabelog.com/kanagawa/A1406/A140601/14006194/",
       "https://www.hotpepper.jp/strJ000775463/",
@@ -455,6 +469,7 @@
     "lon": 139.716461,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/tokyo/A1303/A130302/13001621/",
+    "tabelog_booking": true,
     "sources": [
       "https://r.gnavi.co.jp/dt7xb17g0000/",
       "https://hitosara.com/dish/51garlic.html",
@@ -486,6 +501,7 @@
     "lon": 139.72963,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/tokyo/A1323/A132302/13283492/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1323/A132302/13283492/",
       "https://hitosara.com/0031626453/tel.html",
@@ -516,6 +532,7 @@
     "lon": 139.802155,
     "official_url": "https://ajobase.jp/",
     "tabelog_url": "https://tabelog.com/tokyo/A1324/A132402/13274651/",
+    "tabelog_booking": false,
     "sources": [
       "https://ajobase.jp/",
       "https://ahoya229.com/",
@@ -547,6 +564,7 @@
     "lon": 139.73645,
     "official_url": "https://ahoya229.com/",
     "tabelog_url": "https://tabelog.com/tokyo/A1323/A132301/13279253/",
+    "tabelog_booking": false,
     "sources": [
       "https://ahoya229.com/"
     ],
@@ -576,6 +594,7 @@
     "lon": 139.824921,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/tokyo/A1312/A131202/13234571/",
+    "tabelog_booking": false,
     "sources": [
       "https://tabelog.com/tokyo/A1312/A131202/13234571/",
       "https://www.hotpepper.jp/strJ001265728/",
@@ -606,6 +625,7 @@
     "lon": 139.804443,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/tokyo/A1324/A132404/13270041/",
+    "tabelog_booking": true,
     "sources": [
       "https://tabelog.com/tokyo/A1324/A132404/13270041/dtlmenu/",
       "https://www.hotpepper.jp/strJ002647601/",
@@ -636,6 +656,7 @@
     "lon": 139.764908,
     "official_url": "https://nezu-yamabudo.com/",
     "tabelog_url": "https://tabelog.com/tokyo/A1311/A131106/13194441/",
+    "tabelog_booking": true,
     "sources": [
       "https://nezu-yamabudo.com/",
       "https://r.gnavi.co.jp/bux8um050000/",
@@ -695,6 +716,7 @@
     "lon": 136.91134246,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/aichi/A2301/A230103/23000137/",
+    "tabelog_booking": false,
     "sources": [
       "https://tabelog.com/aichi/A2301/A230103/23000137/dtlmenu/",
       "https://www.hotpepper.jp/strJ000402208/"
@@ -727,6 +749,7 @@
     "lon": 136.88632243,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/aichi/A2301/A230109/23000645/",
+    "tabelog_booking": false,
     "sources": [
       "https://tabelog.com/aichi/A2301/A230109/23000645/",
       "https://www.hotpepper.jp/strJ000430278/"
@@ -786,6 +809,7 @@
     "lon": 136.934448,
     "official_url": "http://www.k-betokon.com/access/",
     "tabelog_url": "https://tabelog.com/aichi/A2303/A230301/23003300/",
+    "tabelog_booking": false,
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
@@ -815,6 +839,7 @@
     "lon": 136.852539,
     "official_url": "http://www.k-betokon.com/access/",
     "tabelog_url": "https://tabelog.com/aichi/A2301/A230113/23011924/",
+    "tabelog_booking": false,
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
@@ -844,6 +869,7 @@
     "lon": 136.946274,
     "official_url": "http://www.k-betokon.com/access/",
     "tabelog_url": "https://tabelog.com/aichi/A2301/A230114/23033835/",
+    "tabelog_booking": false,
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
@@ -873,6 +899,7 @@
     "lon": 136.736481,
     "official_url": "http://www.k-betokon.com/access/",
     "tabelog_url": "https://tabelog.com/gifu/A2101/A210102/21002032/",
+    "tabelog_booking": false,
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
@@ -902,6 +929,7 @@
     "lon": 136.868546,
     "official_url": "http://www.k-betokon.com/access/",
     "tabelog_url": "https://tabelog.com/gifu/A2101/A210102/21002364/",
+    "tabelog_booking": false,
     "sources": [
       "http://www.k-betokon.com/access/"
     ],
@@ -931,6 +959,7 @@
     "lon": 136.708084,
     "official_url": "",
     "tabelog_url": "https://tabelog.com/gifu/A2101/A210101/21001046/",
+    "tabelog_booking": false,
     "sources": [
       "https://r.gnavi.co.jp/8kf0td2d0000/",
       "https://tabelog.com/gifu/A2101/A210101/21001046/",
@@ -961,6 +990,7 @@
     "lon": 138.913086,
     "official_url": "https://nbvm500.gorp.jp/",
     "tabelog_url": "https://tabelog.com/shizuoka/A2205/A220501/22036094/",
+    "tabelog_booking": false,
     "sources": [
       "https://nbvm500.gorp.jp/",
       "https://tabelog.com/shizuoka/A2205/A220501/22036094/",
@@ -1192,6 +1222,7 @@
     "lon": 130.394963,
     "official_url": "https://garliclabo-fukuoka.com/",
     "tabelog_url": "https://tabelog.com/fukuoka/A4001/A400104/40070638/",
+    "tabelog_booking": false,
     "sources": [
       "https://garliclabo-fukuoka.com/",
       "https://tabelog.com/fukuoka/A4001/A400104/40070638/",
@@ -1311,6 +1342,7 @@
     "lon": 127.888939,
     "official_url": "https://crazygarlicshrimp.com/",
     "tabelog_url": "https://tabelog.com/okinawa/A4702/A470202/47033306/",
+    "tabelog_booking": false,
     "sources": [
       "https://crazygarlicshrimp.com/",
       "https://tabelog.com/okinawa/A4702/A470202/47033306/",

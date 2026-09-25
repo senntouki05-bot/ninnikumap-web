@@ -17,6 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
 
 const ROOT = process.cwd();
 const PUB = path.join(ROOT, 'public');
@@ -139,6 +140,7 @@ function write(rel, content) {
     if (!genreOf(s.genre)) errs.push(`ジャンルIDが不正: ${s.name} → ${s.genre}`);
     if (![1, 2, 3].includes(s.level)) errs.push(`にんにく度が不正: ${s.name} → ${s.level}`);
     if (!s.sources || !s.sources.length) errs.push(`出典が無い: ${s.name}`);
+    if (s.tabelog_url && typeof s.tabelog_booking !== 'boolean') errs.push(`tabelog_booking（食べログでネット予約できるか）が無い: ${s.name} — npm run tabelog:booking -- --write`);
     // 都道府県名が area の先頭に入っているか（地域ページの見出しで使う）
     if (!s.area || !/[都道府県]/.test(s.area)) errs.push(`area が都道府県から始まっていない: ${s.name} → ${s.area}`);
   }
@@ -421,7 +423,8 @@ for (const s of shops) {
     /* 食べログは掲載45軒中23軒にあり、写真・営業時間の確認先として実用性が高い。
        同時に本サイト唯一のまとまった送客面でもあるので decorate() を通す。
        ⚠️ 提携前（config が空）は装飾されず rel も sponsored にならない＝素の外部リンクとして出る。 */
-    s.tabelog_url ? ['食べログ', extLink('tabelog', s.tabelog_url, '写真・口コミを見る')] : null,
+    /* 食べログでネット予約できる店だけ「食べログで予約」（予約を受けていない店に「予約」と書かない）。 */
+    s.tabelog_url ? ['食べログ', extLink('tabelog', s.tabelog_url, s.tabelog_booking ? '食べログで予約' : '写真・口コミを見る')] : null,
   ].filter(Boolean);
 
   const body = `<main class="nm-doc">
@@ -594,7 +597,7 @@ write('404.html', layout({
     id: s.id, slug: s.slug, name: s.name, region: s.region, area: s.area, addr: s.addr,
     hours: s.hours || '要確認', closed_days: s.closed_days || '', genre: s.genre, level: s.level,
     menu: s.menu, price: s.price || '', review: s.review, lat: s.lat, lon: s.lon,
-    official_url: s.official_url || '', tabelog_url: s.tabelog_url || '', sources: s.sources.slice(0, 2),
+    official_url: s.official_url || '', tabelog_url: s.tabelog_url || '', tabelog_booking: !!s.tabelog_booking, sources: s.sources.slice(0, 2),
   }));
   const appRegions = regions.map((r) => ({
     id: r.id, name: r.name, kana: r.kana, lat: r.lat, lon: r.lon, zoom: r.zoom,
@@ -693,6 +696,30 @@ function extLink(svc, url, label) {
   const pxTag = px ? `<img src="${esc(px)}" height="1" width="0" alt="" style="border:0">` : '';
   return `<a href="${esc(AFF.decorate(svc, url, AFF_CFG))}" rel="${AFF.relFor(svc, AFF_CFG)}" target="_blank" data-svc="${esc(svc)}">${pxTag}${esc(label)}</a>` +
     (AFF.isAffiliated(svc, AFF_CFG) ? '<span class="nm-ad-mark">広告</span>' : '');
+}
+
+/* ---------------- 10. 静的ファイルの URL に中身のハッシュを付ける（キャッシュ対策）----------------
+   ★2026-09-25 実害: 本番の JS/CSS は `Cache-Control: public, max-age=14400`（4時間）で配信される。
+     URL が固定なので、デプロイ前にサイトを開いたブラウザは最大4時間、古い app.js を使い続ける
+     （＝デプロイした広告バナーが代表のブラウザに出なかった）。HTML は max-age=0 で毎回取り直されるので、
+     HTML が指す URL に中身のハッシュ（?v=）を付ければ、中身が変わった瞬間に全員が新しい版を取りに行く。
+   ⚠️ ここは全ファイルを書き終えた後に走らせる（data.js と linkswitch.js はこのビルドで生成される）。
+   ⚠️ 対象は同一オリジンの script/link だけ。外部（vcdal.js・Google Fonts）には付けない。 */
+{
+  const BUST = ['/affiliate-config.js', '/affiliate.js', '/data.js', '/core.js', '/app.js', '/styles.css', '/linkswitch.js', '/qa.js'];
+  const ver = {};
+  for (const a of BUST) {
+    const f = path.join(PUB, a.slice(1));
+    if (fs.existsSync(f)) ver[a] = crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex').slice(0, 10);
+  }
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+  let n = 0;
+  for (const f of walk(PUB).filter((x) => x.endsWith('.html'))) {
+    const src = fs.readFileSync(f, 'utf8');
+    const out = src.replace(/(<script\b[^>]*\bsrc="|<link\b[^>]*\bhref=")(\/[a-z0-9-]+\.(?:js|css))(?:\?v=[0-9a-f]+)?"/g, (m, pre, a) => ver[a] ? `${pre}${a}?v=${ver[a]}"` : m);
+    if (out !== src) { fs.writeFileSync(f, out); n++; }
+  }
+  console.log(`  キャッシュ対策: ${Object.keys(ver).length}ファイルに ?v= を付けた（HTML ${n}ページ）`);
 }
 
 /* ---------------- 集計を表示 ---------------- */

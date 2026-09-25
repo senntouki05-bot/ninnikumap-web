@@ -10,6 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import crypto from 'node:crypto';
 
 const ROOT = process.cwd();
 const PUB = path.join(ROOT, 'public');
@@ -79,6 +80,25 @@ for (const f of htmls) {
     const r = resolves(m[1]);
     if (r === false) fail(`${rel}: リンク切れ → ${m[1]}`);
     if (r === null) warn(`${rel}: 相対パス（絶対パス推奨） → ${m[1]}`);
+  }
+}
+
+/* ---- 2b: 静的ファイルの URL に中身のハッシュ（?v=）が付いていて、今の中身と一致しているか ----
+   ★2026-09-25: JS/CSS は4時間キャッシュされるので、?v= が無い・古いと、デプロイしても開いた人に古い版が出る
+   （代表のブラウザに広告バナーが出なかった実害）。build.mjs の最後の工程が付ける。 */
+{
+  const hashOf = (a) => crypto.createHash('sha256').update(fs.readFileSync(path.join(PUB, a.slice(1)))).digest('hex').slice(0, 10);
+  const memo = {};
+  for (const f of htmls) {
+    const rel = relOf(f);
+    const html = fs.readFileSync(f, 'utf8');
+    for (const m of html.matchAll(/(?:<script\b[^>]*\bsrc|<link\b[^>]*\bhref)="(\/[a-z0-9-]+\.(?:js|css))(\?v=([0-9a-f]+))?"/g)) {
+      const a = m[1];
+      if (!fs.existsSync(path.join(PUB, a.slice(1)))) continue;   // 実在しないものはリンク切れ検査が落とす
+      memo[a] = memo[a] || hashOf(a);
+      if (!m[3]) fail(`${rel}: ${a} にキャッシュ対策の ?v= が無い（デプロイしても最大4時間ふるい版が出る）`);
+      else if (m[3] !== memo[a]) fail(`${rel}: ${a}?v=${m[3]} が今の中身（${memo[a]}）と一致しない`);
+    }
   }
 }
 
@@ -186,7 +206,7 @@ for (const f of htmls) {
     const rel = relOf(f);
     const html = fs.readFileSync(f, 'utf8');
     if (!/id="ad-disclosure"/.test(html)) fail(`${rel}: 広告表示（#ad-disclosure）が無い`);
-    const hasTag = html.includes(`src="${AFF.linkSwitchSrc}"`) && html.includes('src="/linkswitch.js"');
+    const hasTag = html.includes(`src="${AFF.linkSwitchSrc}"`) && /src="\/linkswitch\.js(\?v=[0-9a-f]+)?"/.test(html);
     if (lsPid && !hasTag) fail(`${rel}: LinkSwitch のタグが載っていない`);
     if (!lsPid && html.includes('valuecommerce.com/vcdal.js')) fail(`${rel}: LinkSwitch 未設定なのに vcdal.js を読み込んでいる`);
     if (/<script>\s*var vc_pid/.test(html)) fail(`${rel}: vc_pid をインラインscriptで書いている（CSP script-src 'self' で止まる）`);

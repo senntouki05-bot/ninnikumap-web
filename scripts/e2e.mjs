@@ -241,13 +241,16 @@ for (const p of ['/list/', '/about/', '/contact/', '/privacy/', '/area/kanto/'])
          dalDynamicProcess() を呼んで走査させているか（走査済みの印 vcdaldp-fin / data-nodal が付く）。 */
       await page.goto(`${BASE}/#/shop/${target.id}`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(3000);
-      const card = await page.evaluate(() => [...document.querySelectorAll('.nm-detail-card a[data-svc]')].map((a) => ({ href: a.getAttribute('href'), svc: a.getAttribute('data-svc'), fin: a.hasAttribute('vcdaldp-fin'), nodal: a.hasAttribute('data-nodal'), rel: a.getAttribute('rel') || '', text: a.textContent })));
+      const card = await page.evaluate(() => [...document.querySelectorAll('.nm-detail-card a[data-svc]')].map((a) => ({ href: a.getAttribute('href'), svc: a.getAttribute('data-svc'), fin: a.hasAttribute('vcdaldp-fin'), nodal: a.hasAttribute('data-nodal'), rel: a.getAttribute('rel') || '', text: a.textContent, mark: (a.nextElementSibling && a.nextElementSibling.classList.contains('nm-ad-mark')) ? a.nextElementSibling.textContent : '' })));
       const cl = card.find((l) => svcs.includes(l.svc));
       if (!cl) bad(`詳細カードに ${target.name} の送客リンクが無い: ${JSON.stringify(card).slice(0, 200)}`);
       else {
         (cl.fin || cl.nodal) ? ok('詳細カードの送客リンクも LinkSwitch が走査した（後から描画したリンクの再走査が効いている）') : bad('詳細カードの送客リンクが走査されていない（MutationObserver→dalDynamicProcess が効いていない）');
         /\bsponsored\b/.test(cl.rel) ? ok('詳細カードの送客リンクに sponsored') : bad('詳細カードの送客リンクに sponsored が無い');
-        /［広告］/.test(cl.text) ? ok('詳細カードの送客リンクに［広告］表示') : bad('詳細カードの送客リンクに［広告］が無い');
+        const shopRec = shops.find((x) => x.id === target.id);
+        const wantLabel = cl.svc === 'tabelog' ? (shopRec.tabelog_booking ? '食べログで予約' : '食べログで見る') : '公式サイト';
+        cl.text.trim() === wantLabel ? ok(`詳細カードのボタン文言「${wantLabel}」（「広告」は文言に混ぜない）`) : bad(`詳細カードのボタン文言が「${cl.text.trim()}」（期待「${wantLabel}」）`);
+        cl.mark === '広告' ? ok('詳細カードの送客リンクの横に「広告」表示') : bad('詳細カードの送客リンクの横に「広告」が無い');
       }
       const cspCard = page.__errors.filter((e) => /Content Security Policy|valuecommerce|imgvc/i.test(e));
       cspCard.length === 0 ? ok('地図アプリでも LinkSwitch 関連の CSP エラーなし') : bad('地図アプリで LinkSwitch がブロックされた: ' + cspCard[0].slice(0, 160));
@@ -255,6 +258,33 @@ for (const p of ['/list/', '/about/', '/contact/', '/privacy/', '/area/kanto/'])
     await page.close();
   } else {
     ok('LinkSwitch 未設定（タグなし）');
+  }
+
+  /* 食べログの文言: 予約できる店だけ「食べログで予約」、できない店は「食べログで見る」（地図アプリの詳細カード） */
+  {
+    const shops = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'shops.json'), 'utf8'));
+    for (const want of [true, false]) {
+      const t = shops.find((x) => x.tabelog_url && x.tabelog_booking === want);
+      if (!t) continue;
+      const page = await newPage(1280, 900);
+      await page.goto(`${BASE}/#/shop/${t.id}`, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(1500);
+      const label = await page.evaluate(() => { const a = document.querySelector('.nm-detail-card a[data-svc="tabelog"]'); return a ? a.textContent.trim() : null; });
+      const exp = want ? '食べログで予約' : '食べログで見る';
+      label === exp ? ok(`${t.name}（予約${want ? 'できる' : 'なし'}）→「${exp}」`) : bad(`${t.name}（予約${want ? 'できる' : 'なし'}）の文言が「${label}」`);
+      await page.close();
+    }
+  }
+
+  /* バナーが広告ブロッカー等で止められたとき: 「広告」の札と空の枠を残さず、募集表示に戻るか */
+  if (Object.keys(cfg.banners || {}).some((k) => AFF.banner(k, cfg))) {
+    const page = await newPage(1440, 900);
+    await page.route(/ad\.jp\.ap\.valuecommerce\.com|i\.imgvc\.com/, (r) => r.abort('blockedbyclient'));
+    await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1500);
+    const st = await page.evaluate(() => ({ banners: document.querySelectorAll('.nm-banner').length, marks: [...document.querySelectorAll('#nm-app .nm-ad-mark')].filter((e) => !e.closest('.nm-detail-card')).length, placeholders: [...document.querySelectorAll('#nm-app a')].filter((a) => /468 × 60|300 × 250/.test(a.textContent)).length }));
+    st.banners === 0 && st.marks === 0 && st.placeholders >= 2 ? ok('バナーを止められたら募集表示に戻る（空の枠・「広告」の札を残さない）') : bad(`バナーを止めたときの表示が崩れている: ${JSON.stringify(st)}`);
+    await page.close();
   }
 
   /* 画像バナー（affiliate-config.js の banners）: 地図ページの広告枠に出るか／画像が実際に読み込めたか

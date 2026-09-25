@@ -12,6 +12,7 @@
     "verify": "npm run build && npm run test && npm run check",
     "deploy": "npm run verify && wrangler pages deploy public --project-name=ninniku-map --branch=main --commit-dirty=true",
     "test": "node scripts/test-affiliate.mjs",
-    "vc:status": "node scripts/vc-status.mjs"
+    "vc:status": "node scripts/vc-status.mjs",
+    "tabelog:booking": "node scripts/tabelog-booking.mjs"
   }
 }

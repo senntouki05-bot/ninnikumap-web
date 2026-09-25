@@ -48,7 +48,8 @@
     // ハンドラは el.__ev に差し替え、リスナー自体は種類ごとに1回だけ張る
     el.__ev = el.__ev || {};
     el.__bound = el.__bound || {};
-    ['click', 'input', 'change', 'keydown'].forEach(function (type) {
+    /* load / error はバナー画像の読み込み結果（広告ブロッカーで止まったら募集表示に戻す）に使う */
+    ['click', 'input', 'change', 'keydown', 'load', 'error'].forEach(function (type) {
       var key = 'on' + type.charAt(0).toUpperCase() + type.slice(1);
       if (p[key]) {
         el.__ev[type] = p[key];
@@ -204,12 +205,23 @@
     banner: function () { return null; },
   };
 
+  /* バナー画像が出せなかった枠。広告ブロッカー（EasyList は `||valuecommerce.com^$third-party` を持つ＝
+     uBlock・AdBlock・Brave 等では VC の画像は必ず止まる）や、広告主側の配信停止（1x1 の透明画像が返る）で起きる。
+     そのままだと「広告」の札と空の枠だけが残るので、募集表示に戻す。回避（別ドメインで出し直す等）はしない。 */
+  var BANNER_FAILED = {};
+  var rerender = null;
+  function bannerFailed(key) {
+    if (BANNER_FAILED[key]) return;
+    BANNER_FAILED[key] = true;
+    if (rerender) rerender();
+  }
+
   /* realCss: 実広告を出すときの外枠。募集中の縞模様の枠（boxCss）は高さ固定なので、実バナーには使わない。 */
   function adSlot(sizeLabel, boxCss, key, realCss) {
     boxCss = 'min-width:0;max-width:100%;' + boxCss;
     /* バリューコマースの画像バナー（affiliate-config.js の banners）。
        「広告」表示は画像の上に重ねない（広告主の画像を隠さない）＝画像の下に出す。 */
-    var b = AFF.banner(key);
+    var b = BANNER_FAILED[key] ? null : AFF.banner(key);
     if (b) {
       return h('div', { key: 'ad-' + key, cls: 'nm-banner', css: 'min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;' + (realCss || '') },
         h('a', {
@@ -218,7 +230,9 @@
         },
           h('img', {
             attrs: { src: b.img, width: String(b.w), height: String(b.h), alt: b.alt, loading: 'lazy', decoding: 'async' },
-            css: 'display:block;max-width:100%;height:auto;border:0;'
+            css: 'display:block;max-width:100%;height:auto;border:0;',
+            onError: function () { bannerFailed(key); },
+            onLoad: function (ev) { if (ev.target.naturalWidth <= 1) bannerFailed(key); }   // 配信停止は 1x1 が返る
           })
         ),
         h('span', { cls: 'nm-ad-mark', css: 'margin-left:0;' }, '広告')
@@ -561,7 +575,9 @@
          未提携なら素通し＝素のリンクとして出る。装飾された場合だけ rel="sponsored" と「広告」表示が付く
          （景表法5条3号・ステマ規制）。 */
       var links = [];
-      if (s.tabelog_url) links.push({ svc: 'tabelog', href: s.tabelog_url, label: '食べログで見る' });
+      /* 食べログでネット予約できる店（data の tabelog_booking）だけ「食べログで予約」。
+         予約を受けていない店に「予約」と書くと、押しても予約できない（2026-09-25 実測で32軒中22軒が予約なし）。 */
+      if (s.tabelog_url) links.push({ svc: 'tabelog', href: s.tabelog_url, label: s.tabelog_booking ? '食べログで予約' : '食べログで見る' });
       /* 公式サイト欄にホットペッパー等のページが入っている店がある → URL からサービスを引く
          （LinkSwitch がそのリンクを変換するので、広告表示と sponsored をそちらにも付ける） */
       else if (s.official_url) links.push({ svc: AFF.serviceOf(s.official_url) || 'official', href: s.official_url, label: '公式サイト' });
@@ -600,14 +616,16 @@
               links.map(function (l, i) {
                 var sponsored = AFF.isAffiliated(l.svc);
                 /* key に店IDを含めて店ごとに <a> を作り直す。LinkSwitch は処理済みの <a> に
-                   data-nodal を付けて二度と触らないので、要素を使い回すと次の店のリンクが変換されない。 */
-                return h('a', {
+                   data-nodal を付けて二度と触らないので、要素を使い回すと次の店のリンクが変換されない。
+                   「広告」はボタンの文言に混ぜず、ボタンのすぐ横に小さく出す（景表法5条3号の表示は外さない）。 */
+                return h('span', { key: 'lw' + s.id + '-' + i, css: 'display:inline-flex;align-items:center;gap:6px;' }, h('a', {
                   key: 'ln' + s.id + '-' + i,
                   attrs: { href: AFF.decorate(l.svc, l.href), target: '_blank', rel: AFF.relFor(l.svc), 'data-svc': l.svc },
                   css: 'border:2px solid #cbb392;background:#fffaf0;color:#7a6448;font-size:12px;font-weight:800;padding:9px 16px;border-radius:999px;box-shadow:0 4px 0 #ddc7a6;text-decoration:none;'
                 },
                   AFF.impressionPixel(l.svc) ? h('img', { key: 'px', attrs: { src: AFF.impressionPixel(l.svc), width: '0', height: '1', alt: '' }, css: 'border:0;' }) : null,
-                  l.label + (sponsored ? '［広告］' : ''));
+                  l.label),
+                  sponsored ? h('span', { cls: 'nm-ad-mark', css: 'margin-left:0;' }, '広告') : null);
               }),
               h('button', { onClick: v.onClose, attrs: { type: 'button' }, css: 'border:0;background:transparent;color:#a8906e;font-family:inherit;font-size:12px;padding:9px 6px;cursor:pointer;' }, 'とじる')
             )
@@ -629,6 +647,7 @@
 
     var root = document.getElementById('nm-app');
     cmp._render = mount(root, view);
+    rerender = function () { cmp.forceUpdate(); };
     cmp._render();
 
     window.GK.spring(cmp, 780);
