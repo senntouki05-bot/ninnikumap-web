@@ -224,13 +224,14 @@
     var b = BANNER_FAILED[key] ? null : AFF.banner(key);
     if (b) {
       return h('div', { key: 'ad-' + key, cls: 'nm-banner', css: 'min-width:0;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;' + (realCss || '') },
+        /* 枠の幅いっぱいまで広げる（上限＝元の大きさ×maxScale・縦横比は保つ）。狭い画面では縮む。 */
         h('a', {
           attrs: { href: b.href, target: '_blank', rel: 'sponsored nofollow noopener', 'data-svc': 'vc-banner' },
-          css: 'display:block;max-width:100%;line-height:0;'
+          css: 'display:block;width:100%;max-width:' + Math.round(b.w * b.maxScale) + 'px;line-height:0;'
         },
           h('img', {
             attrs: { src: b.img, width: String(b.w), height: String(b.h), alt: b.alt, loading: 'lazy', decoding: 'async' },
-            css: 'display:block;max-width:100%;height:auto;border:0;',
+            css: 'display:block;width:100%;height:auto;border:0;',
             onError: function () { bannerFailed(key); },
             onLoad: function (ev) { if (ev.target.naturalWidth <= 1) bannerFailed(key); }   // 配信停止は 1x1 が返る
           })

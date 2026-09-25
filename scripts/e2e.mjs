@@ -297,13 +297,21 @@ for (const p of ['/list/', '/about/', '/contact/', '/privacy/', '/area/kanto/'])
       await page.waitForTimeout(2000);
       const bs = await page.evaluate(() => [...document.querySelectorAll('.nm-banner')].map((el) => {
         const a = el.querySelector('a'); const img = el.querySelector('img'); const r = img ? img.getBoundingClientRect() : null;
-        return { href: a && a.getAttribute('href'), rel: a && a.getAttribute('rel'), src: img && img.getAttribute('src'), nw: img ? img.naturalWidth : 0, w: r ? Math.round(r.width) : 0, h: r ? Math.round(r.height) : 0, mark: (el.querySelector('.nm-ad-mark') || {}).textContent || '' };
+        return { href: a && a.getAttribute('href'), rel: a && a.getAttribute('rel'), src: img && img.getAttribute('src'), nw: img ? img.naturalWidth : 0, nh: img ? img.naturalHeight : 0, w: r ? Math.round(r.width) : 0, h: r ? Math.round(r.height) : 0, wrap: Math.round(el.getBoundingClientRect().width), mark: (el.querySelector('.nm-ad-mark') || {}).textContent || '' };
       }));
       bs.length === slots.length ? ok(`${label}: 広告バナー ${bs.length} 枠が出た`) : bad(`${label}: 広告バナーが ${bs.length} 枠（設定は ${slots.length}）`);
       for (const b of bs) {
         const id = (b.src || '').match(/pid=(\d+)/)?.[1] || '?';
         (b.nw > 1) ? ok(`${label}: バナー pid=${id} の画像が読み込めた（${b.w}×${b.h}px で表示）`) : bad(`${label}: バナー pid=${id} の画像が読み込めていない（CSP か VC 側）`);
         /\bsponsored\b/.test(b.rel || '') && b.mark === '広告' ? ok(`${label}: バナー pid=${id} に sponsored と「広告」`) : bad(`${label}: バナー pid=${id} の広告表示が欠けている`);
+        /* 大きさ: 枠の幅いっぱい、ただし元の大きさ×maxScale まで。縦横比は保つ */
+        const conf = Object.values(cfg.banners).find((x) => String(x.pid) === id);
+        const bn = conf && AFF.banner(Object.keys(cfg.banners).find((k) => String(cfg.banners[k].pid) === id), cfg);
+        if (bn && b.nw > 1) {
+          const want = Math.min(b.wrap, Math.round(bn.w * bn.maxScale));
+          const ratioOk = Math.abs(b.w / b.h - bn.w / bn.h) < 0.05;
+          (Math.abs(b.w - want) <= 2 && ratioOk) ? ok(`${label}: バナー pid=${id} は ${b.w}×${b.h}px（元 ${bn.w}×${bn.h}・上限×${bn.maxScale}・縦横比そのまま）`) : bad(`${label}: バナー pid=${id} の大きさが ${b.w}×${b.h}（期待 幅${want}・比 ${bn.w}:${bn.h}）`);
+        }
       }
       const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       over <= 1 ? ok(`${label}: バナーを入れても横スクロールなし`) : bad(`${label}: バナーで横に ${over}px はみ出した`);

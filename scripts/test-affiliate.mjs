@@ -108,6 +108,12 @@ eq(AFF.banner('banner', { banners: { banner: { sid: '1', pid: '1', w: 0, h: 60 }
 eq(AFF.banner('banner', { banners: { banner: { sid: '1', pid: '1', w: 468, h: 60 } } }).alt, '広告', 'alt 未指定なら「広告」');
 eq(AFF.hasAnyAffiliate(BN), true, 'バナーがあれば収益化オン（開示文が切り替わる）');
 eq(AFF.hasAnyBanner(OFF), false, 'バナー未設定');
+const sc = (v) => AFF.banner('banner', { banners: { banner: { sid: '1', pid: '1', w: 120, h: 120, maxScale: v } } }).maxScale;
+eq(sc(undefined), 1, 'maxScale 未指定は 1（元の大きさより広げない）');
+eq(sc(2), 2, 'maxScale 2');
+eq(sc(5), 2, 'maxScale の上限は 2（それ以上はぼやけすぎる）');
+eq(sc(0.5), 1, '1未満は 1');
+eq(sc('x'), 1, '数でなければ 1');
 
 console.log('\n― 壊れた設定でも落ちない ―');
 for (const broken of [null, undefined, 'string', 42, { valueCommerce: null }, { valueCommerce: { tabelog: null } }, { rakutenAffiliateId: null }, { linkSwitch: null }, { linkSwitch: 'x' }, { linkSwitch: { pid: 123, services: 'hotpepper' } }, { linkSwitch: { pid: null, services: [null, 1] } }, { banners: null }, { banners: { banner: null } }, { banners: { banner: 'x' } }]) {

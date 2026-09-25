@@ -135,10 +135,15 @@
     if (!/^[0-9]{1,20}$/.test(sid) || !/^[0-9]{1,20}$/.test(pid)) return null;
     if (!(w > 0 && w <= 2000) || !(hgt > 0 && hgt <= 2000)) return null;
     var q = '?sid=' + sid + '&pid=' + pid;
+    /* maxScale: 枠が広いとき、元の大きさの何倍まで広げてよいか（縦横比は保つ）。
+       既定 1＝元の大きさより大きくしない（狭い画面では縮む）。画像は元の画素数しか持たないので、
+       広げるほどぼやける＝上限 2。はっきり大きく出したいなら、大きいサイズのバナーを発行して差し替える。 */
+    var ms = Number(b.maxScale);
+    ms = ms >= 1 ? Math.min(ms, 2) : 1;
     return {
       href: 'https://ck.jp.ap.valuecommerce.com/servlet/referral' + q,
       img: 'https://ad.jp.ap.valuecommerce.com/servlet/gifbanner' + q,
-      w: w, h: hgt,
+      w: w, h: hgt, maxScale: ms,
       alt: typeof b.alt === 'string' && b.alt.trim() ? b.alt.trim() : '広告',
     };
   }
